@@ -84,8 +84,15 @@ class Valkey
     private_constant :EMPTY_STREAM_RESPONSE
 
     HashifyStreamEntries = lambda { |reply|
-      reply.compact.map do |entry_id, values|
-        [entry_id, values&.each_slice(2)&.to_h]
+      if reply.is_a?(Hash)
+        reply
+      elsif reply.nil?
+        {}
+      else
+        puts "reply : #{reply.inspect}"
+        reply.compact.map do |entry_id, values|
+          [entry_id, values&.each_slice(2)&.to_h]
+        end
       end
     }
 

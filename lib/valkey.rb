@@ -119,6 +119,8 @@ class Valkey
     result = result[:response]
 
     convert_response = lambda { |result|
+      puts "response_type: #{result[:response_type]}" if $DEBUG
+
       # TODO: handle all types of responses
       case result[:response_type]
       when ResponseType::STRING
@@ -144,7 +146,7 @@ class Valkey
         count = result[:array_value_len].to_i
         map = {}
 
-        Array.new(count) do |i|
+        count.times do |i|
           item = Bindings::CommandResponse.new(ptr + i * Bindings::CommandResponse.size)
 
           map_key = convert_response.call(Bindings::CommandResponse.new(item[:map_key]))
@@ -153,8 +155,7 @@ class Valkey
           map[map_key] = map_value
         end
 
-        # technically it has to return a Hash, but as of now we return just one pair
-        map.to_a.flatten(1) # Flatten to get pairs
+        map
       when ResponseType::NULL
         nil
       when ResponseType::OK
