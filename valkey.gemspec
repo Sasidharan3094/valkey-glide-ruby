@@ -29,4 +29,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "ffi", "~> 1.17.0"
   spec.add_dependency "google-protobuf", "~> 3.23", ">= 3.23.4"
+  spec.add_development_dependency "rake", "~> 13.0"
 end
