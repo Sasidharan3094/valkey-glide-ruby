@@ -2,6 +2,32 @@
 
 require 'bundler/gem_tasks'
 require 'rake/testtask'
+require 'rake/extensiontask'
+
+Rake::ExtensionTask.new('libglide_ffi') do |ext|
+  ext.lib_dir = 'dist/'
+  ext.ext_dir = 'ext/valkey-glide/ffi'
+  ext.tmp_dir = 'tmp/valkey-glide-ffi'
+end
+
+task :compile_libglide_ffi do
+  puts "Building Rust library..."
+  sh "cd ext/valkey-glide/ffi && cargo build --release"
+
+  # Copy .so (or .dylib/.dll) to lib/my_ruby_gem/native/
+  lib_ext =
+    case RUBY_PLATFORM
+    when /darwin/ then 'dylib'
+    when /linux/ then 'so'
+    when /mingw|mswin/ then 'dll'
+    else raise "Unknown platform #{RUBY_PLATFORM}"
+    end
+
+  cp Dir["ext/valkey-glide/ffi/target/release/*.{#{lib_ext}}"].first,
+     "dist/libglide_ffi.#{lib_ext}"
+end
+
+task build: :compile_libglide_ffi
 
 namespace :test do
   groups = %i[valkey cluster]

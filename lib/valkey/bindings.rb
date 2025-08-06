@@ -4,7 +4,17 @@ class Valkey
   module Bindings
     extend FFI::Library
 
-    ffi_lib File.expand_path("./libglide_ffi.so", __dir__)
+    lib_ext =
+      case RUBY_PLATFORM
+      when /darwin/ then 'dylib'
+      when /linux/ then 'so'
+      when /mingw|mswin/ then 'dll'
+      else raise "Unsupported platform"
+      end
+
+    lib_path = File.expand_path("../../dist/libglide_ffi.#{lib_ext}", __dir__)
+
+    ffi_lib lib_path
 
     class ClientType < FFI::Struct
       layout(
