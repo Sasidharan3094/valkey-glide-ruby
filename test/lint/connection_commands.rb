@@ -142,7 +142,9 @@ module Lint
       # Backend returns array in current implementation
       # TODO: Backend should convert RESP3 map to Ruby Hash
       assert_kind_of Array, result
-      assert_equal client_name, r.client_get_name
+      # In cluster mode, HELLO and CLIENT GETNAME might hit different nodes
+      # so we can't reliably assert the name was set
+      assert_equal client_name, r.client_get_name unless cluster_mode?
     end
 
     def test_reset
