@@ -42,9 +42,21 @@ class Valkey
 
       # Close the connection.
       #
-      # @return [String] `OK`
+      # @deprecated The QUIT command is deprecated since Redis 7.2.0 / Valkey 7.2+.
+      #   Clients should use the `close` method directly instead.
+      #   This avoids lingering TIME_WAIT sockets on the server side.
+      #
+      # @return [String] `OK` or nil if connection already closed
+      # @see https://redis.io/docs/latest/commands/quit/
       def quit
+        # For compatibility, we still support QUIT but recommend using close() instead
         send_command(RequestType::QUIT)
+      rescue ConnectionError
+        # Server closes connection immediately after QUIT
+        nil
+      ensure
+        # Clean up our side of the connection
+        close if respond_to?(:close)
       end
 
       # Switch to a different protocol version and handshake with the server.
@@ -70,6 +82,19 @@ class Valkey
       # @return [String] `RESET`
       def reset
         send_command(RequestType::RESET)
+      end
+
+      # Send a generic CLIENT subcommand.
+      #
+      # @param [Symbol, String] subcommand The CLIENT subcommand to run, e.g. :list, :id, :kill, etc.
+      # @param [Array] args Arguments for the subcommand
+      # @return [Object] Depends on subcommand
+      # @example
+      #   client(:id)                  # => 12345
+      #   client(:set_name, "my_app")  # => "OK"
+      #   client(:list)                # => [{"id" => "1", ...}, ...]
+      def client(subcommand, *args)
+        send("client_#{subcommand.to_s.downcase}", *args)
       end
 
       # Get the current client's ID.
