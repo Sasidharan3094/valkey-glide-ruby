@@ -158,9 +158,12 @@ module Lint
     end
 
     def test_client_caching
-      # CLIENT CACHING requires tracking to be enabled with OPTIN or OPTOUT
+      # CLIENT CACHING YES works with OPTIN mode
       r.client_tracking("ON", "OPTIN")
       assert_equal "OK", r.client_caching("YES")
+      r.client_tracking("OFF")
+      # CLIENT CACHING NO requires OPTOUT mode
+      r.client_tracking("ON", "OPTOUT")
       assert_equal "OK", r.client_caching("NO")
       r.client_tracking("OFF")
     end
