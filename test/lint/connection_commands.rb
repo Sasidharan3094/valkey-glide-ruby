@@ -115,27 +115,23 @@ module Lint
     end
 
     def test_client_getredir
-      skip("CLIENT GETREDIR command not implemented in backend yet")
       redir = r.client_getredir
       assert_kind_of Integer, redir
     end
 
     def test_hello_default
-      skip("HELLO command not implemented in backend yet")
       result = r.hello
       assert_kind_of Hash, result
       assert result.key?("server"), "HELLO response should contain server info"
     end
 
     def test_hello_with_version
-      skip("HELLO command not implemented in backend yet")
       result = r.hello(3)
       assert_kind_of Hash, result
       assert_equal 3, result["proto"]
     end
 
     def test_hello_with_setname
-      skip("HELLO command not implemented in backend yet")
       client_name = "hello_lint_test"
       result = r.hello(3, setname: client_name)
       assert_kind_of Hash, result
@@ -143,7 +139,6 @@ module Lint
     end
 
     def test_reset
-      skip("RESET command not implemented in backend yet")
       # Set some state
       r.client_set_name("before_reset")
       # In cluster mode, we can only use database 0
@@ -156,19 +151,16 @@ module Lint
     end
 
     def test_client_caching
-      skip("CLIENT CACHING command not implemented in backend yet")
       assert_equal "OK", r.client_caching("YES")
       assert_equal "OK", r.client_caching("NO")
     end
 
     def test_client_tracking
-      skip("CLIENT TRACKING command not implemented in backend yet")
       assert_equal "OK", r.client_tracking("ON")
       assert_equal "OK", r.client_tracking("OFF")
     end
 
     def test_client_tracking_info
-      skip("CLIENT TRACKING command not implemented in backend yet")
       info = r.client_tracking_info
       assert_kind_of Array, info
     end
