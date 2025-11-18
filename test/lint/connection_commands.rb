@@ -25,7 +25,7 @@ module Lint
 
     def test_select_database
       assert_equal "OK", r.select(0)
-      
+
       # In cluster mode, only database 0 is supported
       if cluster_mode?
         assert_raises(Valkey::CommandError) do
@@ -44,11 +44,11 @@ module Lint
 
     def test_client_set_get_name
       name = "lint_test_client"
-      
+
       # Use the server commands interface that's known to work
       r.client(:set_name, name)
       assert_equal name, r.client(:get_name)
-      
+
       # Clear client name
       r.client(:set_name, "")
       assert_nil r.client(:get_name)
@@ -81,11 +81,13 @@ module Lint
     end
 
     def test_client_set_info
-      # Use the server commands interface that's known to work
-      assert_equal "OK", r.client(:set_info, "lib-name", "valkey-ruby")
-      
-      assert_raises(Valkey::CommandError) do
-        r.client(:set_info, "invalid-attr", "value")
+      target_version "7.2" do
+        # Use the server commands interface that's known to work
+        assert_equal "OK", r.client(:set_info, "lib-name", "valkey-ruby")
+
+        assert_raises(Valkey::CommandError) do
+          r.client(:set_info, "invalid-attr", "value")
+        end
       end
     end
 
@@ -100,32 +102,34 @@ module Lint
       # Use the server commands interface that's known to work
       assert_equal "OK", r.client_no_evict(:on)
       assert_equal "OK", r.client_no_evict(:off)
-      
+
       assert_raises(Valkey::CommandError) do
         r.client_no_evict(:invalid)
       end
     end
 
     def test_client_no_touch
-      # Use the server commands interface that's known to work
-      assert_equal "OK", r.client_no_touch(:on)
-      assert_equal "OK", r.client_no_touch(:off)
-      
-      assert_raises(Valkey::CommandError) do
-        r.client_no_touch(:invalid)
+      target_version "7.2" do
+        # Use the server commands interface that's known to work
+        assert_equal "OK", r.client_no_touch(:on)
+        assert_equal "OK", r.client_no_touch(:off)
+
+        assert_raises(Valkey::CommandError) do
+          r.client_no_touch(:invalid)
+        end
       end
     end
 
     def test_client_getredir
       skip("CLIENT GETREDIR command not implemented in backend yet")
-      
+
       redir = r.client_getredir
       assert_kind_of Integer, redir
     end
 
     def test_hello_default
       skip("HELLO command not implemented in backend yet")
-      
+
       result = r.hello
       assert_kind_of Hash, result
       assert result.key?("server"), "HELLO response should contain server info"
@@ -133,7 +137,7 @@ module Lint
 
     def test_hello_with_version
       skip("HELLO command not implemented in backend yet")
-      
+
       result = r.hello(3)
       assert_kind_of Hash, result
       assert_equal 3, result["proto"]
@@ -141,7 +145,7 @@ module Lint
 
     def test_hello_with_setname
       skip("HELLO command not implemented in backend yet")
-      
+
       client_name = "hello_lint_test"
       result = r.hello(3, setname: client_name)
       assert_kind_of Hash, result
@@ -150,46 +154,44 @@ module Lint
 
     def test_reset
       skip("RESET command not implemented in backend yet")
-      
+
       # Set some state
       r.client_set_name("before_reset")
-      
+
       # In cluster mode, we can only use database 0
-      unless cluster_mode?
-        r.select(1)
-      end
-      
+      r.select(1) unless cluster_mode?
+
       # Reset
       result = r.reset
       assert_equal "RESET", result
-      
+
       # State should be reset
       assert_nil r.client_get_name
     end
 
     def test_client_caching
       skip("CLIENT CACHING command not implemented in backend yet")
-      
+
       assert_equal "OK", r.client_caching("YES")
       assert_equal "OK", r.client_caching("NO")
     end
 
     def test_client_tracking
       skip("CLIENT TRACKING command not implemented in backend yet")
-      
+
       assert_equal "OK", r.client_tracking("ON")
       assert_equal "OK", r.client_tracking("OFF")
     end
 
     def test_client_tracking_info
       skip("CLIENT TRACKING command not implemented in backend yet")
-      
+
       info = r.client_tracking_info
       assert_kind_of Array, info
     end
 
     def test_quit
-      # Note: This test is tricky because QUIT closes the connection
+      # NOTE: This test is tricky because QUIT closes the connection
       # We'll skip it in lint tests to avoid connection issues
       skip("QUIT command closes connection - tested separately")
     end

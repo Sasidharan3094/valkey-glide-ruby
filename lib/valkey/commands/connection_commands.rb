@@ -54,15 +54,13 @@ class Valkey
       # @return [Hash] Server information and capabilities
       def hello(protover = 3, **options)
         args = [protover]
-        
+
         if options[:auth]
           args << "AUTH"
           args.concat(Array(options[:auth]))
         end
-        
-        if options[:setname]
-          args << "SETNAME" << options[:setname]
-        end
+
+        args << "SETNAME" << options[:setname] if options[:setname]
 
         send_command(RequestType::HELLO, args)
       end
@@ -103,11 +101,9 @@ class Valkey
       # @return [String] List of clients as a formatted string
       def client_list(type: nil, ids: nil)
         args = []
-        
-        if type
-          args << "TYPE" << type
-        end
-        
+
+        args << "TYPE" << type if type
+
         if ids
           args << "ID"
           args.concat(Array(ids))
@@ -135,11 +131,9 @@ class Valkey
         else
           # Extended form with filters
           args = []
-          
-          if addr
-            args << "ADDR" << addr
-          end
-          
+
+          args << "ADDR" << addr if addr
+
           options.each do |key, value|
             case key
             when :id
@@ -222,7 +216,7 @@ class Valkey
       # @return [String] `OK`
       def client_tracking(status, **options)
         args = [status]
-        
+
         options.each do |key, value|
           case key
           when :redirect
