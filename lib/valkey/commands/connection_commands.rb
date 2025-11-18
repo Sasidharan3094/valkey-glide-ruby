@@ -51,7 +51,7 @@ class Valkey
       #
       # @param [Integer] protover Protocol version (2 or 3)
       # @param [Hash] options Optional parameters like AUTH, SETNAME
-      # @return [Hash] Server information and capabilities
+      # @return [Array] Server information as flat array (TODO: should be Hash for RESP3)
       def hello(protover = 3, **options)
         args = [protover]
 
@@ -98,7 +98,7 @@ class Valkey
       #
       # @param [String] type Optional filter by client type (normal, master, slave, pubsub)
       # @param [Array<String>] ids Optional filter by client IDs
-      # @return [String] List of clients as a formatted string
+      # @return [Array<Hash>] List of clients, each represented as a Hash of attributes
       def client_list(type: nil, ids: nil)
         args = []
 
@@ -109,7 +109,12 @@ class Valkey
           args.concat(Array(ids))
         end
 
-        send_command(RequestType::CLIENT_LIST, args)
+        send_command(RequestType::CLIENT_LIST, args) do |reply|
+          reply.lines.map do |line|
+            entries = line.chomp.split(/[ =]/)
+            Hash[entries.each_slice(2).to_a]
+          end
+        end
       end
 
       # Get information about the current client connection.
