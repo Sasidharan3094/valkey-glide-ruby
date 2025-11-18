@@ -162,6 +162,14 @@ class Valkey
         end
       end
 
+      # Kill a client connection by address (simple form).
+      #
+      # @param [String] addr Client address (ip:port)
+      # @return [String] `OK`
+      def client_kill_simple(addr)
+        send_command(RequestType::CLIENT_KILL_SIMPLE, [addr])
+      end
+
       private
 
       def build_client_kill_args(addr, options)
@@ -239,30 +247,17 @@ class Valkey
       # Configure client tracking.
       #
       # @param [String] status Tracking status (ON, OFF)
-      # @param [Hash] options Optional parameters
+      # @param [Array] args Additional positional arguments (REDIRECT, PREFIX, BCAST, OPTIN, OPTOUT, NOLOOP)
+      # @param [Hash] options Optional parameters (for keyword argument style)
       # @return [String] `OK`
-      def client_tracking(status, **options)
-        args = [status]
-
-        options.each do |key, value|
-          case key
-          when :redirect
-            args << "REDIRECT" << value.to_s
-          when :prefix
-            args << "PREFIX"
-            Array(value).each { |prefix| args << prefix }
-          when :bcast
-            args << "BCAST" if value
-          when :optin
-            args << "OPTIN" if value
-          when :optout
-            args << "OPTOUT" if value
-          when :noloop
-            args << "NOLOOP" if value
-          end
-        end
-
-        send_command(RequestType::CLIENT_TRACKING, args)
+      # @example Positional style
+      #   client_tracking("ON", "OPTIN")
+      # @example Keyword style
+      #   client_tracking("ON", optin: true, redirect: 123)
+      def client_tracking(status, *args, **options)
+        cmd_args = [status]
+        cmd_args.concat(args.any? ? args : build_client_tracking_args(options))
+        send_command(RequestType::CLIENT_TRACKING, cmd_args)
       end
 
       # Get client tracking information.
@@ -293,6 +288,30 @@ class Valkey
       # @return [String] `OK`
       def client_no_touch(mode)
         send_command(RequestType::CLIENT_NO_TOUCH, [mode.to_s.upcase])
+      end
+
+      private
+
+      def build_client_tracking_args(options)
+        args = []
+        options.each do |key, value|
+          case key
+          when :redirect
+            args << "REDIRECT" << value.to_s
+          when :prefix
+            args << "PREFIX"
+            Array(value).each { |prefix| args << prefix }
+          when :bcast
+            args << "BCAST" if value
+          when :optin
+            args << "OPTIN" if value
+          when :optout
+            args << "OPTOUT" if value
+          when :noloop
+            args << "NOLOOP" if value
+          end
+        end
+        args
       end
     end
   end
