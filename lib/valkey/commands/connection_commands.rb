@@ -126,34 +126,31 @@ class Valkey
       # @return [Integer] Number of clients killed
       def client_kill(addr = nil, **options)
         if addr && options.empty?
-          # Simple form: CLIENT KILL ip:port
           send_command(RequestType::CLIENT_KILL_SIMPLE, [addr])
         else
-          # Extended form with filters
-          args = []
-
-          args << "ADDR" << addr if addr
-
-          options.each do |key, value|
-            case key
-            when :id
-              args << "ID" << value.to_s
-            when :type
-              args << "TYPE" << value.to_s
-            when :user
-              args << "USER" << value.to_s
-            when :addr
-              args << "ADDR" << value.to_s
-            when :laddr
-              args << "LADDR" << value.to_s
-            when :skipme
-              args << "SKIPME" << (value ? "yes" : "no")
-            end
-          end
-
-          send_command(RequestType::CLIENT_KILL, args)
+          send_command(RequestType::CLIENT_KILL, build_client_kill_args(addr, options))
         end
       end
+
+      private
+
+      def build_client_kill_args(addr, options)
+        args = []
+        args << "ADDR" << addr if addr
+        options.each do |key, value|
+          case key
+          when :id then args << "ID" << value.to_s
+          when :type then args << "TYPE" << value.to_s
+          when :user then args << "USER" << value.to_s
+          when :addr then args << "ADDR" << value.to_s
+          when :laddr then args << "LADDR" << value.to_s
+          when :skipme then args << "SKIPME" << (value ? "yes" : "no")
+          end
+        end
+        args
+      end
+
+      public
 
       # Pause client processing.
       #
