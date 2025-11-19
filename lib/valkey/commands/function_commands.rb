@@ -153,9 +153,7 @@ class Valkey
       def function_restore(serialized_value, policy: nil)
         args = [serialized_value]
 
-        if policy
-          args << policy.to_s.upcase
-        end
+        args << policy.to_s.upcase if policy
 
         send_command(RequestType::FUNCTION_RESTORE, args)
       end

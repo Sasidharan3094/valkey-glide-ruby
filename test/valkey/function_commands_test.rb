@@ -2,18 +2,27 @@
 
 require "test_helper"
 
+# rubocop:disable Metrics/ClassLength
 class TestFunctionCommands < Minitest::Test
   include Helper::Client
 
   def setup
     super
     # Ensure the function registry is empty before running tests
-    r.function_flush rescue nil
+    begin
+      r.function_flush
+    rescue StandardError
+      nil
+    end
   end
 
   def teardown
     # Clean up after tests
-    r.function_flush rescue nil
+    begin
+      r.function_flush
+    rescue StandardError
+      nil
+    end
     super
   end
 
@@ -33,12 +42,12 @@ class TestFunctionCommands < Minitest::Test
 
   def test_function_load_replace
     r.function_load(sample_library_code)
-    
+
     # Loading again without replace should raise an error
     assert_raises(Valkey::CommandError) do
       r.function_load(sample_library_code)
     end
-    
+
     # Loading with replace should work
     result = r.function_load(sample_library_code, replace: true)
     assert_equal "mylib", result
@@ -46,11 +55,11 @@ class TestFunctionCommands < Minitest::Test
 
   def test_function_list
     r.function_load(sample_library_code)
-    
+
     list = r.function_list
     assert_kind_of Array, list
-    assert list.size > 0
-    
+    assert list.size.positive?
+
     # Check that our library is in the list
     lib = list.find { |l| l.is_a?(Array) && l.include?("mylib") }
     assert lib
@@ -58,26 +67,26 @@ class TestFunctionCommands < Minitest::Test
 
   def test_function_list_with_library_name
     r.function_load(sample_library_code)
-    
+
     list = r.function_list(library_name: "mylib")
     assert_kind_of Array, list
-    assert list.size > 0
+    assert list.size.positive?
   end
 
   def test_function_list_with_code
     r.function_load(sample_library_code)
-    
+
     list = r.function_list(with_code: true)
     assert_kind_of Array, list
-    assert list.size > 0
+    assert list.size.positive?
   end
 
   def test_function_delete
     r.function_load(sample_library_code)
-    
+
     result = r.function_delete("mylib")
     assert_equal "OK", result
-    
+
     # Verify it's deleted
     list = r.function_list
     lib = list.find { |l| l.is_a?(Array) && l.include?("mylib") }
@@ -86,10 +95,10 @@ class TestFunctionCommands < Minitest::Test
 
   def test_function_flush
     r.function_load(sample_library_code)
-    
+
     result = r.function_flush
     assert_equal "OK", result
-    
+
     # Verify all functions are flushed
     list = r.function_list
     assert_equal [], list
@@ -97,31 +106,31 @@ class TestFunctionCommands < Minitest::Test
 
   def test_function_flush_async
     r.function_load(sample_library_code)
-    
+
     result = r.function_flush(async: true)
     assert_equal "OK", result
   end
 
   def test_function_flush_sync
     r.function_load(sample_library_code)
-    
+
     result = r.function_flush(sync: true)
     assert_equal "OK", result
   end
 
   def test_function_dump_and_restore
     r.function_load(sample_library_code)
-    
+
     # Dump the functions
     payload = r.function_dump
     assert_kind_of String, payload
-    assert payload.bytesize > 0
-    
+    assert payload.bytesize.positive?
+
     # Flush and restore
     r.function_flush
     result = r.function_restore(payload)
     assert_equal "OK", result
-    
+
     # Verify the library is restored
     list = r.function_list
     lib = list.find { |l| l.is_a?(Array) && l.include?("mylib") }
@@ -131,11 +140,11 @@ class TestFunctionCommands < Minitest::Test
   def test_function_restore_with_policy
     r.function_load(sample_library_code)
     payload = r.function_dump
-    
+
     # Test FLUSH policy
     result = r.function_restore(payload, policy: "FLUSH")
     assert_equal "OK", result
-    
+
     # Test REPLACE policy
     result = r.function_restore(payload, policy: "REPLACE")
     assert_equal "OK", result
@@ -143,7 +152,7 @@ class TestFunctionCommands < Minitest::Test
 
   def test_fcall
     r.function_load(sample_library_code)
-    
+
     result = r.fcall("myfunc", keys: [], args: ["hello"])
     assert_equal "hello", result
   end
@@ -155,9 +164,9 @@ class TestFunctionCommands < Minitest::Test
         return keys[1]
       end)
     LUA
-    
+
     r.function_load(code)
-    
+
     result = r.fcall("keyfunc", keys: ["mykey"], args: [])
     assert_equal "mykey", result
   end
@@ -171,9 +180,9 @@ class TestFunctionCommands < Minitest::Test
         flags={'no-writes'}
       }
     LUA
-    
+
     r.function_load(code)
-    
+
     result = r.fcall_ro("rofunc", keys: [], args: ["readonly"])
     assert_equal "readonly", result
   end
@@ -194,11 +203,12 @@ class TestFunctionCommands < Minitest::Test
     # Test the convenience method
     result = r.function(:load, sample_library_code)
     assert_equal "mylib", result
-    
+
     list = r.function(:list)
     assert_kind_of Array, list
-    
+
     result = r.function(:delete, "mylib")
     assert_equal "OK", result
   end
 end
+# rubocop:enable Metrics/ClassLength
