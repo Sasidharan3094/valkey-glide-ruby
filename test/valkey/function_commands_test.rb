@@ -20,7 +20,7 @@ class TestFunctionCommands < Minitest::Test
   def sample_library_code
     <<~LUA
       #!lua name=mylib
-      valkey.register_function('myfunc', function(keys, args)
+      redis.register_function('myfunc', function(keys, args)
         return args[1]
       end)
     LUA
@@ -151,7 +151,7 @@ class TestFunctionCommands < Minitest::Test
   def test_fcall_with_keys
     code = <<~LUA
       #!lua name=keylib
-      valkey.register_function('keyfunc', function(keys, args)
+      redis.register_function('keyfunc', function(keys, args)
         return keys[1]
       end)
     LUA
@@ -165,7 +165,7 @@ class TestFunctionCommands < Minitest::Test
   def test_fcall_ro
     code = <<~LUA
       #!lua name=rolib
-      valkey.register_function{
+      redis.register_function{
         function_name='rofunc',
         callback=function(keys, args) return args[1] end,
         flags={'no-writes'}

@@ -7,7 +7,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=testlib
-        valkey.register_function('testfunc', function(keys, args) return 'test' end)
+        redis.register_function('testfunc', function(keys, args) return 'test' end)
       LUA
 
       r.function_load(code)
@@ -19,7 +19,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=dumplib
-        valkey.register_function('dumpfunc', function(keys, args) return 'dump' end)
+        redis.register_function('dumpfunc', function(keys, args) return 'dump' end)
       LUA
 
       r.function_load(code)
@@ -32,7 +32,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=flushlib
-        valkey.register_function('flushfunc', function(keys, args) return 'flush' end)
+        redis.register_function('flushfunc', function(keys, args) return 'flush' end)
       LUA
 
       r.function_load(code)
@@ -44,7 +44,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=asynclib
-        valkey.register_function('asyncfunc', function(keys, args) return 'async' end)
+        redis.register_function('asyncfunc', function(keys, args) return 'async' end)
       LUA
 
       r.function_load(code)
@@ -56,7 +56,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=synclib
-        valkey.register_function('syncfunc', function(keys, args) return 'sync' end)
+        redis.register_function('syncfunc', function(keys, args) return 'sync' end)
       LUA
 
       r.function_load(code)
@@ -77,7 +77,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=listlib
-        valkey.register_function('listfunc', function(keys, args) return 'list' end)
+        redis.register_function('listfunc', function(keys, args) return 'list' end)
       LUA
 
       r.function_load(code)
@@ -90,7 +90,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=namelib
-        valkey.register_function('namefunc', function(keys, args) return 'name' end)
+        redis.register_function('namefunc', function(keys, args) return 'name' end)
       LUA
 
       r.function_load(code)
@@ -103,7 +103,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=codelib
-        valkey.register_function('codefunc', function(keys, args) return 'code' end)
+        redis.register_function('codefunc', function(keys, args) return 'code' end)
       LUA
 
       r.function_load(code)
@@ -116,7 +116,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=loadlib
-        valkey.register_function('loadfunc', function(keys, args) return 'load' end)
+        redis.register_function('loadfunc', function(keys, args) return 'load' end)
       LUA
 
       result = r.function_load(code)
@@ -128,7 +128,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=replacelib
-        valkey.register_function('replacefunc', function(keys, args) return 'replace' end)
+        redis.register_function('replacefunc', function(keys, args) return 'replace' end)
       LUA
 
       r.function_load(code)
@@ -141,7 +141,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=restorelib
-        valkey.register_function('restorefunc', function(keys, args) return 'restore' end)
+        redis.register_function('restorefunc', function(keys, args) return 'restore' end)
       LUA
 
       r.function_load(code)
@@ -156,7 +156,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=policylib
-        valkey.register_function('policyfunc', function(keys, args) return 'policy' end)
+        redis.register_function('policyfunc', function(keys, args) return 'policy' end)
       LUA
 
       r.function_load(code)
@@ -177,7 +177,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=fcallib
-        valkey.register_function('fcallfunc', function(keys, args) return args[1] end)
+        redis.register_function('fcallfunc', function(keys, args) return args[1] end)
       LUA
 
       r.function_load(code)
@@ -190,7 +190,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=keyslib
-        valkey.register_function('keysfunc', function(keys, args) return keys[1] end)
+        redis.register_function('keysfunc', function(keys, args) return keys[1] end)
       LUA
 
       r.function_load(code)
@@ -203,7 +203,7 @@ module Lint
 
       code = <<~LUA
         #!lua name=rolib
-        valkey.register_function{
+        redis.register_function{
           function_name='rofunc',
           callback=function(keys, args) return args[1] end,
           flags={'no-writes'}
