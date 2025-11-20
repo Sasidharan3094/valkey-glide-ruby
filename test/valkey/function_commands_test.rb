@@ -9,12 +9,17 @@ class TestFunctionCommands < Minitest::Test
   def setup
     super
     # Ensure the function registry is empty before running tests
-    r.function_flush rescue nil
+    r.function_flush
+  rescue StandardError
+    nil
   end
 
   def teardown
     # Clean up after tests
-    r.function_flush rescue nil
+    r.function_flush
+  rescue StandardError
+    nil
+  ensure
     super
   end
 end
