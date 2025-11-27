@@ -12,6 +12,7 @@ require "valkey/commands/sorted_set_commands"
 require "valkey/commands/set_commands"
 require "valkey/commands/scripting_commands"
 require "valkey/commands/function_commands"
+require "valkey/commands/module_commands"
 require "valkey/commands/cluster_commands"
 
 class Valkey
@@ -40,6 +41,7 @@ class Valkey
     include SetCommands
     include ScriptingCommands
     include FunctionCommands
+    include ModuleCommands
     include ClusterCommands
 
     # there are a few commands that are not implemented by design
