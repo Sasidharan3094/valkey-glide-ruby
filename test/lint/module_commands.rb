@@ -54,15 +54,14 @@ module Lint
       target_version "4.0" do
         if module_loaded?
           # Module already loaded, verify it's in the list
-          assert module_loaded?, "Module #{MODULE_NAME} should be in the list"
         else
           # Load the module
           result = r.module_load(MODULE_PATH)
           assert_equal "OK", result
 
           # Verify module is loaded
-          assert module_loaded?, "Module #{MODULE_NAME} should be in the list"
         end
+        assert module_loaded?, "Module #{MODULE_NAME} should be in the list"
       rescue Valkey::CommandError => e
         if e.message.include?("MODULE command not allowed")
           skip("MODULE commands not enabled")
@@ -136,14 +135,13 @@ module Lint
       target_version "7.0" do
         if module_loaded?
           # Module already loaded, verify it's in the list
-          assert module_loaded?, "Module #{MODULE_NAME} should be in the list"
         else
           result = r.module_loadex(MODULE_PATH)
           assert_equal "OK", result
 
           # Verify module is loaded
-          assert module_loaded?, "Module #{MODULE_NAME} should be in the list"
         end
+        assert module_loaded?, "Module #{MODULE_NAME} should be in the list"
       rescue Valkey::CommandError => e
         if e.message.include?("MODULE command not allowed")
           skip("MODULE commands not enabled")
@@ -292,6 +290,7 @@ module Lint
     rescue Valkey::CommandError => e
       # If MODULE commands aren't enabled, assume module is not loaded
       return false if e.message.include?("MODULE command not allowed")
+
       raise
     end
   end
