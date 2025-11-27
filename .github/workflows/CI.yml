@@ -51,7 +51,7 @@ jobs:
         run: |
           echo "Copying RedisBloom module for MODULE commands testing..."
           mkdir -p test/fixtures
-          cp .github/files/redisbloom.so test/fixtures/redisbloom.so
+          cp .github/files/redisbloom-amd64-v2.6.12.so test/fixtures/redisbloom.so
           chmod +x test/fixtures/redisbloom.so
           ls -lh test/fixtures/redisbloom.so
       
