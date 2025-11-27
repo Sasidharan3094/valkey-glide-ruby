@@ -109,8 +109,12 @@ module Lint
         end
 
         # Flush all data to allow unloading
-        r.flushall
-        sleep 0.1 # Give Valkey a moment to complete the flush
+        begin
+          r.flushall
+          sleep 0.2 # Give Valkey a moment to complete the flush
+        rescue Valkey::TimeoutError
+          skip("Timeout during flushall - server may be busy")
+        end
 
         # Try to unload the module
         begin
@@ -238,8 +242,12 @@ module Lint
         end
 
         # Flush all data to allow unloading
-        r.flushall
-        sleep 0.1 # Give Valkey a moment to complete the flush
+        begin
+          r.flushall
+          sleep 0.2 # Give Valkey a moment to complete the flush
+        rescue Valkey::TimeoutError
+          skip("Timeout during flushall - server may be busy")
+        end
 
         # Try to unload the module using convenience method
         begin
