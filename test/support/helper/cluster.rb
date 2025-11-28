@@ -21,6 +21,10 @@ module Helper
       '7.0'
     end
 
+    def cluster_mode?
+      true
+    end
+
     private
 
     def _new_client(options = {})
