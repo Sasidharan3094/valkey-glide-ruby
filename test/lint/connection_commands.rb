@@ -68,10 +68,10 @@ module Lint
     def test_client_pause_unpause
       # Pause for a short duration
       assert_equal "OK", r.client(:pause, 100) # 100ms pause
-      
+
       # Wait for the pause to expire naturally before unpausing
       sleep(0.15) # Wait longer than pause duration
-      
+
       # Now unpause should work without timing out
       assert_equal "OK", r.client(:unpause)
     end

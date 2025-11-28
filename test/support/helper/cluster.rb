@@ -17,11 +17,9 @@ module Helper
     rescue Valkey::CommandError => e
       # In cluster mode, flushdb might hit a read-only replica
       # This is acceptable during test setup
-      if e.message.include?("ReadOnly") || e.message.include?("read only replica")
-        valkey
-      else
-        raise
-      end
+      raise unless e.message.include?("ReadOnly") || e.message.include?("read only replica")
+
+      valkey
     end
 
     # TODO: it has to come from the server
