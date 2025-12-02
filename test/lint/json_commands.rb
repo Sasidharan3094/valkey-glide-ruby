@@ -2,7 +2,7 @@
 
 module Lint
   module JsonCommands
-    JSON_MODULE_PATH = "/tmp/modules/librejson.so"
+    JSON_MODULE_PATH = "/tmp/modules/redisjson.so"
 
     def setup
       super
