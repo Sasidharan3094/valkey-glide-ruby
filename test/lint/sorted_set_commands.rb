@@ -628,100 +628,82 @@ module Lint
     end
 
     def test_bzmpop
-      target_version("7.0") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        result = r.bzmpop(0.1, "key1", modifier: "MAX", count: 2)
-        assert_equal "key1", result[0]
-        assert_equal 2, result[1].length
-        assert_equal "c", result[1][0][0]
-        assert_equal 3.0, result[1][0][1]
-      end
+      result = r.bzmpop(0.1, "key1", modifier: "MAX", count: 2)
+      assert_equal "key1", result[0]
+      assert_equal 2, result[1].length
+      assert_equal "c", result[1][0][0]
+      assert_equal 3.0, result[1][0][1]
     end
 
     def test_bzpopmax
-      target_version("5.0") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        result = r.bzpopmax("key1", timeout: 0.1)
-        assert_equal "key1", result[0]
-        assert_equal "c", result[1]
-        assert_equal 3.0, result[2]
-      end
+      result = r.bzpopmax("key1", timeout: 0.1)
+      assert_equal "key1", result[0]
+      assert_equal "c", result[1]
+      assert_equal 3.0, result[2]
     end
 
     def test_bzpopmin
-      target_version("5.0") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        result = r.bzpopmin("key1", timeout: 0.1)
-        assert_equal "key1", result[0]
-        assert_equal "a", result[1]
-        assert_equal 1.0, result[2]
-      end
+      result = r.bzpopmin("key1", timeout: 0.1)
+      assert_equal "key1", result[0]
+      assert_equal "a", result[1]
+      assert_equal 1.0, result[2]
     end
 
     def test_zintercard
-      target_version("7.0") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
-        r.zadd("key2", [[1, "b"], [2, "c"], [3, "d"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key2", [[1, "b"], [2, "c"], [3, "d"]])
 
-        assert_equal 2, r.zintercard("key1", "key2")
-      end
+      assert_equal 2, r.zintercard("key1", "key2")
     end
 
     def test_zintercard_with_limit
-      target_version("7.0") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
-        r.zadd("key2", [[1, "b"], [2, "c"], [3, "d"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key2", [[1, "b"], [2, "c"], [3, "d"]])
 
-        assert_equal 1, r.zintercard("key1", "key2", limit: 1)
-      end
+      assert_equal 1, r.zintercard("key1", "key2", limit: 1)
     end
 
     def test_zmpop
-      target_version("7.0") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        result = r.zmpop("key1", modifier: "MAX", count: 2)
-        assert_equal "key1", result[0]
-        assert_equal 2, result[1].length
-        assert_equal "c", result[1][0][0]
-        assert_equal 3.0, result[1][0][1]
-      end
+      result = r.zmpop("key1", modifier: "MAX", count: 2)
+      assert_equal "key1", result[0]
+      assert_equal 2, result[1].length
+      assert_equal "c", result[1][0][0]
+      assert_equal 3.0, result[1][0][1]
     end
 
     def test_zrandmember
-      target_version("6.2") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        member = r.zrandmember("key1")
-        assert_includes %w[a b c], member
-      end
+      member = r.zrandmember("key1")
+      assert_includes %w[a b c], member
     end
 
     def test_zrandmember_with_count
-      target_version("6.2") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        members = r.zrandmember("key1", 2)
-        assert_equal 2, members.length
-        members.each { |m| assert_includes %w[a b c], m }
-      end
+      members = r.zrandmember("key1", 2)
+      assert_equal 2, members.length
+      members.each { |m| assert_includes %w[a b c], m }
     end
 
     def test_zrandmember_with_scores
-      target_version("6.2") do
-        r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
+      r.zadd("key1", [[1, "a"], [2, "b"], [3, "c"]])
 
-        result = r.zrandmember("key1", 2, with_scores: true)
-        assert_kind_of Array, result
-        assert result.length >= 1 && result.length <= 2
+      result = r.zrandmember("key1", 2, with_scores: true)
+      assert_kind_of Array, result
+      assert result.length >= 1 && result.length <= 2
 
-        result.each do |member, score|
-          assert_includes %w[a b c], member
-          assert_kind_of Float, score
-        end
+      result.each do |member, score|
+        assert_includes %w[a b c], member
+        assert_kind_of Float, score
       end
     end
 
