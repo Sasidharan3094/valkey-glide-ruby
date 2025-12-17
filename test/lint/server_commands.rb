@@ -828,7 +828,7 @@ module Lint
     end
 
     def test_lolwut
-      #skip("LOLWUT command not implemented in backend yet")
+      # skip("LOLWUT command not implemented in backend yet")
 
       # LOLWUT returns ASCII art and version
       result = r.lolwut
@@ -843,7 +843,7 @@ module Lint
     end
 
     def test_lolwut_with_version
-      #skip("LOLWUT command not implemented in backend yet")
+      # skip("LOLWUT command not implemented in backend yet")
 
       # LOLWUT with version parameter
       result = r.lolwut(5)
@@ -855,7 +855,7 @@ module Lint
     end
 
     def test_psync
-      #skip("PSYNC command is internal replication command")
+      # skip("PSYNC command is internal replication command")
 
       # PSYNC is used for partial resynchronization
       result = r.psync("?", -1)
@@ -871,7 +871,7 @@ module Lint
     end
 
     def test_replconf
-      #skip("REPLCONF command is internal replication command")
+      # skip("REPLCONF command is internal replication command")
 
       # REPLCONF is used for replication configuration
       result = r.replconf("listening-port", "6380")
@@ -884,7 +884,7 @@ module Lint
     end
 
     def test_replicaof
-      #skip("REPLICAOF command requires replication setup")
+      # skip("REPLICAOF command requires replication setup")
 
       # Make server a replica
       result = r.replicaof("127.0.0.1", 6379)
@@ -901,7 +901,7 @@ module Lint
     end
 
     def test_restore_asking
-      #skip("RESTORE-ASKING command is internal cluster command")
+      # skip("RESTORE-ASKING command is internal cluster command")
 
       # Create a test key and dump it
       r.set("test:restore:key", "test value")
@@ -924,7 +924,7 @@ module Lint
     end
 
     def test_restore_asking_with_options
-      #skip("RESTORE-ASKING command is internal cluster command")
+      # skip("RESTORE-ASKING command is internal cluster command")
 
       # Create a test key and dump it
       r.set("test:restore:key", "test value")
@@ -983,7 +983,7 @@ module Lint
     end
 
     def test_swapdb
-      #skip("SWAPDB command not implemented in backend yet")
+      # skip("SWAPDB command not implemented in backend yet")
 
       # Set a key in database 0
       r.select(0)
