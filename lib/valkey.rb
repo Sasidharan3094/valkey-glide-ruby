@@ -29,8 +29,7 @@ class Valkey
 
     return [] if pipeline.commands.empty?
 
-    results = send_batch_commands(pipeline.commands, exception: exception)
-    results
+    send_batch_commands(pipeline.commands, exception: exception)
   end
 
   def send_batch_commands(commands, exception: true)
