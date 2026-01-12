@@ -266,20 +266,13 @@ class Valkey
         send_command(RequestType::UNLINK, keys.flatten)
       end
 
-      # Determine how many of the keys exists.
+      # Determine if a key exists.
+      # This method returns a boolean for compatibility with redis-rb v3.3.5 behavior.
       #
-      # @param [String, Array<String>] keys
-      # @return [Integer]
-      def exists(*keys)
-        send_command(RequestType::EXISTS, keys.flatten)
-      end
-
-      # Determine if any of the keys exists.
-      #
-      # @param [String, Array<String>] keys
+      # @param [String] key
       # @return [Boolean]
-      def exists?(*keys)
-        send_command(RequestType::EXISTS, keys.flatten, &:positive?)
+      def exists(key)
+        send_command(RequestType::EXISTS, [key], &:positive?)
       end
 
       # Move a key to another database.
