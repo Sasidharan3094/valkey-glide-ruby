@@ -322,13 +322,14 @@ class Valkey
       # @param [String] destination
       # @param [Integer] db
       # @param [Boolean] replace removes the `destination` key before copying value to it
-      # @return [Boolean] whether the key was copied or not
+      # @return [Integer] 1 if the key was copied, 0 otherwise
       def copy(source, destination, db: nil, replace: false)
         args = [source, destination]
         args << "DB" << db if db
         args << "REPLACE" if replace
 
-        send_command(RequestType::COPY, args)
+        result = send_command(RequestType::COPY, args)
+        result ? 1 : 0
       end
 
       def object(subcommand, *args)

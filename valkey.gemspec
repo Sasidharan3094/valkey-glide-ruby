@@ -25,6 +25,10 @@ Gem::Specification.new do |spec|
         f.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile])
     end
   end
+  
+  # Explicitly include native libraries
+  spec.files += Dir['lib/valkey/*.dylib', 'lib/valkey/*.so']
+  
   spec.require_paths = ["lib"]
 
   spec.add_dependency "ffi", "~> 1.17.0"

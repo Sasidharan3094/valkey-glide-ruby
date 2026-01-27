@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 class Valkey
-  VERSION = "0.1.0"
+  VERSION = "3.3.5"
 end

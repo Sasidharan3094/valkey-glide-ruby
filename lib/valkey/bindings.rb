@@ -4,7 +4,17 @@ class Valkey
   module Bindings
     extend FFI::Library
 
-    ffi_lib File.expand_path("./libglide_ffi.so", __dir__)
+    # Detect platform and load appropriate library
+    lib_name = case RbConfig::CONFIG['host_os']
+               when /darwin|mac os/
+                 'libglide_ffi.dylib'
+               when /linux/
+                 'libglide_ffi.so'
+               else
+                 raise "Unsupported platform: #{RbConfig::CONFIG['host_os']}"
+               end
+
+    ffi_lib File.expand_path("./#{lib_name}", __dir__)
 
     class ClientType < FFI::Struct
       layout(
