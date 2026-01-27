@@ -268,7 +268,10 @@ class Valkey
 
     # Track queued commands during MULTI (except for MULTI, EXEC, DISCARD, WATCH, UNWATCH)
     if @in_multi && !@queued_commands.nil?
-      tx_commands = [RequestType::MULTI, RequestType::EXEC, RequestType::DISCARD, RequestType::WATCH, RequestType::UNWATCH]
+      tx_commands = [
+        RequestType::MULTI, RequestType::EXEC, RequestType::DISCARD,
+        RequestType::WATCH, RequestType::UNWATCH
+      ]
       @queued_commands << [command_type, command_args.dup] if !tx_commands.include?(command_type) && result == "QUEUED"
     end
 
@@ -276,6 +279,14 @@ class Valkey
   end
 
   def initialize(options = {})
+    # Parse URL if provided
+    if options[:url]
+      url_options = Utils.parse_redis_url(options[:url])
+      # Merge URL options, but explicit options take precedence
+      options = url_options.merge(options.reject { |k, _v| k == :url })
+    end
+
+    # Extract connection parameters
     host = options[:host] || "127.0.0.1"
     port = options[:port] || 6379
 
@@ -283,22 +294,139 @@ class Valkey
 
     cluster_mode_enabled = options[:cluster_mode] || false
 
-    # Protocol defaults to RESP2 for stability with RediSearch commands
-    # Users can explicitly set protocol: :resp3 if needed
+    # Protocol defaults to RESP2
     protocol = case options[:protocol]
                when :resp3, "resp3", 3
                  ConnectionRequest::ProtocolVersion::RESP3
                else
-                 # Default to RESP2 for stability (RediSearch compatibility)
                  ConnectionRequest::ProtocolVersion::RESP2
                end
 
-    request = ConnectionRequest::ConnectionRequest.new(
+    # TLS/SSL support
+    tls_mode = if [true, "true"].include?(options[:ssl])
+                 ConnectionRequest::TlsMode::SecureTls
+               else
+                 ConnectionRequest::TlsMode::NoTls
+               end
+
+    # SSL parameters - map ssl_params to protobuf root_certs
+    root_certs = []
+    if options[:ssl_params].is_a?(Hash)
+      # ca_file - read CA certificate file (PEM or DER format)
+      root_certs << File.binread(options[:ssl_params][:ca_file]) if options[:ssl_params][:ca_file]
+
+      # cert - client certificate (file path or OpenSSL::X509::Certificate)
+      if options[:ssl_params][:cert]
+        cert_data = if options[:ssl_params][:cert].is_a?(String)
+                      File.binread(options[:ssl_params][:cert])
+                    elsif options[:ssl_params][:cert].respond_to?(:to_pem)
+                      options[:ssl_params][:cert].to_pem
+                    elsif options[:ssl_params][:cert].respond_to?(:to_der)
+                      options[:ssl_params][:cert].to_der
+                    else
+                      options[:ssl_params][:cert].to_s
+                    end
+        root_certs << cert_data
+      end
+
+      # key - client key (file path or OpenSSL::PKey)
+      if options[:ssl_params][:key]
+        key_data = if options[:ssl_params][:key].is_a?(String)
+                     File.binread(options[:ssl_params][:key])
+                   elsif options[:ssl_params][:key].respond_to?(:to_pem)
+                     options[:ssl_params][:key].to_pem
+                   elsif options[:ssl_params][:key].respond_to?(:to_der)
+                     options[:ssl_params][:key].to_der
+                   else
+                     options[:ssl_params][:key].to_s
+                   end
+        root_certs << key_data
+      end
+
+      # Additional root certificates from ca_path
+      if options[:ssl_params][:ca_path]
+        Dir.glob(File.join(options[:ssl_params][:ca_path], "*.crt")).each do |cert_file|
+          root_certs << File.binread(cert_file)
+        end
+        Dir.glob(File.join(options[:ssl_params][:ca_path], "*.pem")).each do |cert_file|
+          root_certs << File.binread(cert_file)
+        end
+      end
+
+      # Direct root_certs array support
+      root_certs.concat(options[:ssl_params][:root_certs]) if options[:ssl_params][:root_certs].is_a?(Array)
+    end
+
+    # Authentication support
+    authentication_info = nil
+    if options[:password] || options[:username]
+      authentication_info = ConnectionRequest::AuthenticationInfo.new(
+        password: options[:password] || "",
+        username: options[:username] || ""
+      )
+    end
+
+    # Database selection
+    database_id = options[:db] || 0
+
+    # Client name
+    client_name = options[:client_name] || ""
+
+    # Timeout handling
+    # :timeout sets the request timeout (for command execution)
+    # :connect_timeout sets the connection establishment timeout
+    # Default request timeout is 5.0 seconds
+    request_timeout = options[:timeout] || 5.0
+
+    # Connection timeout (milliseconds) - defaults to 0 (uses system default)
+    connection_timeout_ms = if options[:connect_timeout]
+                              (options[:connect_timeout] * 1000).to_i
+                            else
+                              0
+                            end
+
+    # Connection retry strategy
+    connection_retry_strategy = nil
+    if options[:reconnect_attempts] || options[:reconnect_delay] || options[:reconnect_delay_max]
+      number_of_retries = options[:reconnect_attempts] || 1
+      base_delay = options[:reconnect_delay] || 0.5
+      max_delay = options[:reconnect_delay_max]
+      exponent_base = 2
+      jitter_percent = 0
+
+      if max_delay && base_delay.positive? && number_of_retries.positive?
+        calculated_base = (max_delay / base_delay)**(1.0 / number_of_retries.to_f)
+        exponent_base = [calculated_base.round, 2].max
+      end
+
+      factor_ms = (base_delay * 1000).to_i
+
+      connection_retry_strategy = ConnectionRequest::ConnectionRetryStrategy.new(
+        number_of_retries: number_of_retries,
+        factor: factor_ms,
+        exponent_base: exponent_base,
+        jitter_percent: jitter_percent
+      )
+    end
+
+    # Build connection request
+    request_params = {
       cluster_mode_enabled: cluster_mode_enabled,
-      request_timeout: options[:timeout] || 3.0,
+      request_timeout: request_timeout,
       protocol: protocol,
+      tls_mode: tls_mode,
       addresses: nodes.map { |node| ConnectionRequest::NodeAddress.new(host: node[:host], port: node[:port]) }
-    )
+    }
+
+    # Add optional fields only if they have values
+    request_params[:connection_timeout] = connection_timeout_ms if connection_timeout_ms.positive?
+    request_params[:database_id] = database_id if database_id.positive?
+    request_params[:client_name] = client_name unless client_name.empty?
+    request_params[:authentication_info] = authentication_info if authentication_info
+    request_params[:root_certs] = root_certs unless root_certs.empty?
+    request_params[:connection_retry_strategy] = connection_retry_strategy if connection_retry_strategy
+
+    request = ConnectionRequest::ConnectionRequest.new(request_params)
 
     client_type = Bindings::ClientType.new
     client_type[:tag] = 1 # SyncClient
