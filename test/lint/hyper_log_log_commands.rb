@@ -67,9 +67,7 @@ module Lint
       result = r.pfdebug("GETREG", "hll")
       assert_kind_of Array, result
     rescue Valkey::CommandError => e
-      if e.message.include?("PFDEBUG") || e.message.include?("unknown")
-        skip("PFDEBUG not available: #{e.message}")
-      end
+      skip("PFDEBUG not available: #{e.message}") if e.message.include?("PFDEBUG") || e.message.include?("unknown")
       raise
     end
 
