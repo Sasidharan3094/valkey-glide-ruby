@@ -58,5 +58,34 @@ module Lint
       r.pfadd('{1}bar', %w[a b c foo])
       assert_equal true, valkey.pfmerge('{1}baz', '{1}foo', '{1}bar')
     end
+
+    # pfdebug tests
+
+    def test_pfdebug
+      r.pfadd("hll", "a")
+
+      result = r.pfdebug("GETREG", "hll")
+      assert_kind_of Array, result
+    rescue Valkey::CommandError => e
+      if e.message.include?("PFDEBUG") || e.message.include?("unknown")
+        skip("PFDEBUG not available: #{e.message}")
+      end
+      raise
+    end
+
+    # pfselftest tests
+
+    def test_pfselftest
+      # PFSELFTEST is an internal stress test that may time out or not be available
+      result = r.pfselftest
+      assert_equal "OK", result
+    rescue Valkey::TimeoutError
+      skip("PFSELFTEST timed out (internal stress test can be slow)")
+    rescue Valkey::CommandError => e
+      if e.message.include?("PFSELFTEST") || e.message.include?("unknown")
+        skip("PFSELFTEST not available: #{e.message}")
+      end
+      raise
+    end
   end
 end

@@ -156,6 +156,8 @@ class Valkey
     PFADD = 701
     PFCOUNT = 702
     PFMERGE = 703
+    PF_DEBUG = 704
+    PF_SELFTEST = 705
 
     # List commands
     BLMOVE = 801
