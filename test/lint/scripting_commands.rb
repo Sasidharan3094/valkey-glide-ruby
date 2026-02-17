@@ -137,7 +137,7 @@ module Lint
       5.times do
         result = r.evalsha(sha)
         assert result.is_a?(Integer)
-        assert result >= 0 && result <= 1
+        assert result.between?(0, 1)
       end
     end
 
