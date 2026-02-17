@@ -26,6 +26,11 @@ Gem::Specification.new do |spec|
         f.start_with?(*%w[bin/ test/ spec/ features/ .git .github appveyor Gemfile])
     end
   end
+
+  # Include native FFI libraries that may not be tracked by git
+  %w[lib/valkey/libglide_ffi.dylib lib/valkey/libglide_ffi.so].each do |native_lib|
+    spec.files << native_lib if File.exist?(File.join(__dir__, native_lib))
+  end
   spec.require_paths = ["lib"]
 
   spec.add_dependency "ffi", "~> 1.17.0"
