@@ -46,39 +46,6 @@ class Valkey
       def pfmerge(dest_key, *source_key)
         send_command(RequestType::PFMERGE, [dest_key, *source_key], &Utils::BoolifySet)
       end
-
-      # Internal debugging command for HyperLogLog values.
-      #
-      # @param [String] subcommand the debug subcommand (e.g. "GETREG", "DECODE", "ENCODING")
-      # @param [String] key the HyperLogLog key
-      # @return [Object] depends on subcommand
-      #
-      # @example Get raw registers
-      #   valkey.pfdebug("GETREG", "mykey")
-      #     # => [0, 0, 1, ...]
-      # @example Get encoding info
-      #   valkey.pfdebug("DECODE", "mykey")
-      #     # => "..."
-      #
-      # @note This is an internal command meant for developing and testing Valkey.
-      # @see https://valkey.io/commands/pfdebug/
-      def pfdebug(subcommand, key)
-        send_command(RequestType::PF_DEBUG, [subcommand.to_s, key])
-      end
-
-      # Internal self-test for the HyperLogLog implementation.
-      #
-      # @return [String] "OK" if the test passes
-      #
-      # @example Run HyperLogLog self-test
-      #   valkey.pfselftest
-      #     # => "OK"
-      #
-      # @note This is an internal command meant for developing and testing Valkey.
-      # @see https://valkey.io/commands/pfselftest/
-      def pfselftest
-        send_command(RequestType::PF_SELFTEST)
-      end
     end
   end
 end
