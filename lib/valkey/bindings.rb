@@ -4,7 +4,8 @@ class Valkey
   module Bindings
     extend FFI::Library
 
-    ffi_lib File.expand_path("./libglide_ffi.so", __dir__)
+    lib_ext = FFI::Platform.mac? ? "dylib" : "so"
+    ffi_lib File.expand_path("./libglide_ffi.#{lib_ext}", __dir__)
 
     class ClientType < FFI::Struct
       layout(
