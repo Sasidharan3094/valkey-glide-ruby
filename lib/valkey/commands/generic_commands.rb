@@ -275,7 +275,7 @@ class Valkey
       def keys(pattern = "*")
         send_command(RequestType::KEYS, [pattern]) do |reply|
           if reply.is_a?(String)
-            reply.split(" ")
+            reply.split
           else
             reply
           end
