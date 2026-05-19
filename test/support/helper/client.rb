@@ -27,7 +27,11 @@ module Helper
     private
 
     def _new_client(options = {})
-      Valkey.new(options.merge(port: PORT, timeout: TIMEOUT))
+      client = Valkey.new(options.merge(port: PORT, timeout: TIMEOUT))
+      # Explicitly SELECT the database after connection to ensure it's set
+      # regardless of whether the URI database path is honoured by the FFI layer
+      client.select(options[:db]) if options[:db]
+      client
     end
   end
 end
