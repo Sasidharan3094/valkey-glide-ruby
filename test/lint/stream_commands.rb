@@ -201,6 +201,7 @@ module Lint
       r.del "newstream"
     rescue Valkey::CommandError => e
       raise unless e.message.include?("ClusterDown")
+
       skip("Cluster temporarily unavailable after failover: #{e.message}")
     end
 
