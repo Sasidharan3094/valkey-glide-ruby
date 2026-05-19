@@ -40,18 +40,18 @@ module Lint
         db14.set "foo", "s1"
         db15.set "baz", "s3"
 
-        # Copy from db14 to db15
-        assert db14.copy("foo", "baz", db: 15)
-        assert_equal "s1", db14.get("foo")   # source unchanged
-        assert_equal "s1", db15.get("baz")   # destination updated
+        # Copy from db14 to db15 — use a fresh destination key
+        assert db14.copy("foo", "newkey", db: 15)
+        assert_equal "s1", db14.get("foo")     # source unchanged
+        assert_equal "s1", db15.get("newkey")  # destination created
 
         # Copy to existing key in db15 without replace returns false
-        assert !db14.copy("foo", "baz", db: 15)
+        assert !db14.copy("foo", "newkey", db: 15)
 
         # Copy to existing key in db15 with replace: true succeeds
         db14.set "foo", "s2"
-        assert db14.copy("foo", "baz", db: 15, replace: true)
-        assert_equal "s2", db15.get("baz")
+        assert db14.copy("foo", "newkey", db: 15, replace: true)
+        assert_equal "s2", db15.get("newkey")
       ensure
         db14&.close
         db15&.close
