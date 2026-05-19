@@ -27,11 +27,10 @@ module Helper
     private
 
     def _new_client(options = {})
-      client = Valkey.new(options.merge(port: PORT, timeout: TIMEOUT))
-      # Explicitly SELECT the database after connection to ensure it's set
-      # regardless of whether the URI database path is honoured by the FFI layer
-      client.select(options[:db]) if options[:db]
-      client
+      # Pass db via URI (handled in Valkey#initialize) — do NOT call select()
+      # after connection since the glide FFI is stateless per-command and does
+      # not persist SELECT state across calls.
+      Valkey.new(options.merge(port: PORT, timeout: TIMEOUT))
     end
   end
 end
