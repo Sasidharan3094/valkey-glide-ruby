@@ -337,7 +337,9 @@ class Valkey
       # @param [Integer] db
       # @return [Boolean] whether the key was moved or not
       def move(key, db)
-        send_command(RequestType::MOVE, [key, db])
+        send_command(RequestType::MOVE, [key, db]) do |reply|
+          reply == true || reply == 1
+        end
       end
 
       # Copy a value from one key to another.
@@ -370,7 +372,9 @@ class Valkey
         args << "DB" << db if db
         args << "REPLACE" if replace
 
-        send_command(RequestType::COPY, args)
+        send_command(RequestType::COPY, args) do |reply|
+          reply == true || reply == 1
+        end
       end
 
       def object(subcommand, *args)

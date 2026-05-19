@@ -15,16 +15,16 @@ module Lint
         r.set "foo", "s1"
         r.set "bar", "s2"
 
-        # Basic copy
-        assert r.copy("foo", "baz")
+        # Basic copy (Redis returns 1/0; client surfaces Boolean — assert explicitly)
+        assert_equal true, r.copy("foo", "baz")
         assert_equal "s1", r.get("baz")
 
         # Copy to existing key without replace returns false
-        assert !r.copy("foo", "bar")
+        assert_equal false, r.copy("foo", "bar")
         assert_equal "s2", r.get("bar")
 
         # Copy with replace: true overwrites destination
-        assert r.copy("foo", "bar", replace: true)
+        assert_equal true, r.copy("foo", "bar", replace: true)
         assert_equal "s1", r.get("bar")
 
         # Source key is unchanged after all operations
@@ -40,16 +40,16 @@ module Lint
         db14.set "foo", "s1"
 
         # Copy from db14 to db15 — destination key doesn't exist yet
-        assert db14.copy("foo", "newkey", db: 15)
+        assert_equal true, db14.copy("foo", "newkey", db: 15)
         assert_equal "s1", db14.get("foo")    # source unchanged
         assert_equal "s1", db15.get("newkey") # destination created
 
         # Copy to existing key in db15 without replace returns false
-        assert !db14.copy("foo", "newkey", db: 15)
+        assert_equal false, db14.copy("foo", "newkey", db: 15)
 
         # Copy to existing key in db15 with replace: true succeeds
         db14.set "foo", "s2"
-        assert db14.copy("foo", "newkey", db: 15, replace: true)
+        assert_equal true, db14.copy("foo", "newkey", db: 15, replace: true)
         assert_equal "s2", db15.get("newkey")
       ensure
         db14&.close
@@ -223,12 +223,12 @@ module Lint
       db15.set "bar", "s2"
 
       # Move "foo" from db15 to db14 — should succeed
-      assert db15.move("foo", 14)
+      assert_equal true, db15.move("foo", 14)
       assert_nil db15.get("foo")
       assert_equal "s1", db14.get("foo")
 
       # Move "bar" from db15 to db14 — should fail because "bar" already exists in db14
-      assert !db15.move("bar", 14)
+      assert_equal false, db15.move("bar", 14)
       assert_equal "s2", db15.get("bar")
       assert_equal "s3", db14.get("bar")
     ensure
