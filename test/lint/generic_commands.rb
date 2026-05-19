@@ -38,12 +38,11 @@ module Lint
         db15.flushdb
 
         db14.set "foo", "s1"
-        db15.set "baz", "s3"
 
-        # Copy from db14 to db15 — use a fresh destination key
+        # Copy from db14 to db15 — destination key doesn't exist yet
         assert db14.copy("foo", "newkey", db: 15)
-        assert_equal "s1", db14.get("foo")     # source unchanged
-        assert_equal "s1", db15.get("newkey")  # destination created
+        assert_equal "s1", db14.get("foo")    # source unchanged
+        assert_equal "s1", db15.get("newkey") # destination created
 
         # Copy to existing key in db15 without replace returns false
         assert !db14.copy("foo", "newkey", db: 15)
