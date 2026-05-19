@@ -27,9 +27,6 @@ module Helper
     private
 
     def _new_client(options = {})
-      # Pass db via URI (handled in Valkey#initialize) — do NOT call select()
-      # after connection since the glide FFI is stateless per-command and does
-      # not persist SELECT state across calls.
       Valkey.new(options.merge(port: PORT, timeout: TIMEOUT))
     end
   end
