@@ -4,8 +4,87 @@ class Valkey
   module Bindings
     extend FFI::Library
 
-    lib_ext = FFI::Platform.mac? ? "dylib" : "so"
-    ffi_lib File.expand_path("./libglide_ffi.#{lib_ext}", __dir__)
+    # Determine platform-specific library extension and directory name
+    def self.platform_info
+      os = if FFI::Platform.mac?
+             "darwin"
+           elsif FFI::Platform.windows?
+             "windows"
+           else
+             "linux"
+           end
+
+      # Detect architecture
+      arch = case RbConfig::CONFIG["host_cpu"]
+             when /x86_64|amd64/i
+               "x86_64"
+             when /aarch64|arm64/i
+               "aarch64"
+             when /i[3-6]86/i
+               "x86"
+             else
+               RbConfig::CONFIG["host_cpu"]
+             end
+
+      lib_ext = case os
+                when "darwin"
+                  "dylib"
+                when "windows"
+                  "dll"
+                else
+                  "so"
+                end
+
+      # Platform directory name matches Rust target triple convention
+      platform_dir = case os
+                     when "darwin"
+                       "#{arch}-apple-darwin"
+                     when "linux"
+                       "#{arch}-unknown-linux-gnu"
+                     when "windows"
+                       "#{arch}-pc-windows-msvc"
+                     end
+
+      { os: os, arch: arch, lib_ext: lib_ext, platform_dir: platform_dir }
+    end
+
+    platform = platform_info
+    lib_ext = platform[:lib_ext]
+    platform_dir = platform[:platform_dir]
+
+    # Look for the native library in the following locations (in order):
+    # 1. valkey-glide submodule build output (development/source builds)
+    # 2. Platform-specific bundled library in lib/valkey/native/{platform}/ (for gem distribution)
+    # 3. Legacy bundled library in lib/valkey (fallback for old gem structure)
+    lib_paths = [
+      # Submodule build output (release) - from lib/valkey/ go up 2 levels to repo root
+      File.expand_path("../../valkey-glide/ffi/target/release/libglide_ffi.#{lib_ext}", __dir__),
+      # Submodule build output (debug)
+      File.expand_path("../../valkey-glide/ffi/target/debug/libglide_ffi.#{lib_ext}", __dir__),
+      # Platform-specific bundled library (for gem distribution)
+      File.expand_path("./native/#{platform_dir}/libglide_ffi.#{lib_ext}", __dir__),
+      # Legacy bundled library (fallback)
+      File.expand_path("./libglide_ffi.#{lib_ext}", __dir__)
+    ]
+
+    lib_path = lib_paths.find { |path| File.exist?(path) }
+
+    unless lib_path
+      raise LoadError, <<~ERROR
+        Could not find libglide_ffi native library for platform: #{platform_dir}
+
+        Searched in:
+        #{lib_paths.map { |p| "  - #{p}" }.join("\n")}
+
+        To build from source:
+          1. Initialize the submodule: git submodule update --init --recursive
+          2. Build the FFI library: cd valkey-glide/ffi && cargo build --release
+
+        Detected platform: OS=#{platform[:os]}, Arch=#{platform[:arch]}
+      ERROR
+    end
+
+    ffi_lib lib_path
 
     class ClientType < FFI::Struct
       layout(
