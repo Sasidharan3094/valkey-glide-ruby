@@ -5,6 +5,7 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__) unless ENV["TEST_INSTALLED_GEM"]
 
 require "valkey"
+require_relative "support/test_cluster"
 
 require "minitest/autorun"
 require 'minitest/reporters'
@@ -29,5 +30,10 @@ CLUSTER_NODES = 6.times.map do |i|
 end
 
 Dir[File.expand_path("lint/**/*.rb", __dir__)].sort.each do |f|
+  require f
+end
+
+# Load valkey shared test modules
+Dir[File.expand_path("valkey/**/*.rb", __dir__)].sort.each do |f|
   require f
 end

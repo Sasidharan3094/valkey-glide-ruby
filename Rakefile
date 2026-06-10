@@ -111,7 +111,7 @@ task native: "native:build"
 # =============================================================================
 
 namespace :test do
-  groups = %i[valkey cluster]
+  groups = %i[standalone cluster]
   groups.each do |group|
     Rake::TestTask.new(group) do |t|
       t.libs << "test"
@@ -122,10 +122,15 @@ namespace :test do
     end
   end
 
-  lost_tests = Dir["test/**/*_test.rb"] - groups.map { |g| Dir["test/#{g}/**/*_test.rb"] }.flatten
+  # Exclude module directories (valkey/, lint/) from lost_tests check
+  # These contain reusable test modules, not standalone test files
+  module_dirs = %w[valkey lint]
+  lost_tests = Dir["test/**/*_test.rb"] -
+               groups.map { |g| Dir["test/#{g}/**/*_test.rb"] }.flatten -
+               module_dirs.map { |d| Dir["test/#{d}/**/*_test.rb"] }.flatten
   abort "The following test files are in no group:\n#{lost_tests.join("\n")}" unless lost_tests.empty?
 end
 
-task test: ["test:valkey"]
+task test: ["test:standalone", "test:cluster"]
 
 task default: :test
