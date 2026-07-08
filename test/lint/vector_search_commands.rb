@@ -174,7 +174,7 @@ module Lint
         # Add a document
         r.send_command(Valkey::RequestType::HSET, ["doc:1", "title", "test document"])
 
-        # Note: Valkey's native FT.DROPINDEX does not support the DD flag.
+        # NOTE: Valkey's native FT.DROPINDEX does not support the DD flag.
         # DD is a Redis Stack (RediSearch module) extension. On Valkey, dropping
         # an index never deletes the underlying keys. We test that ft_drop_index
         # works without DD and that documents are preserved.
