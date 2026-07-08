@@ -20,7 +20,7 @@ Link to related issues (if applicable).
 
 Closes #
 
-### Features / Behaviour Changes
+### Features / Changes
 
 <!--
 Describe the changes made at a high level.
