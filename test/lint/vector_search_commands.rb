@@ -26,7 +26,7 @@ module Lint
 
       # Clean up test index if it exists
       begin
-        r.ft_drop_index(TEST_INDEX, dd: true) if index_exists?(TEST_INDEX)
+        r.ft_drop_index(TEST_INDEX) if index_exists?(TEST_INDEX)
       rescue Valkey::CommandError => e
         # Ignore errors if index doesn't exist or command not available
         unless e.message.include?("Unknown Index") || e.message.include?("unknown command")
@@ -36,7 +36,7 @@ module Lint
 
       # Clean up any other test indexes
       begin
-        r.ft_drop_index("#{TEST_INDEX}_2", dd: true) if index_exists?("#{TEST_INDEX}_2")
+        r.ft_drop_index("#{TEST_INDEX}_2") if index_exists?("#{TEST_INDEX}_2")
       rescue Valkey::CommandError
         # Ignore - index doesn't exist
       end
@@ -49,8 +49,10 @@ module Lint
         begin
           r.module_unload(REDISEARCH_MODULE_NAME)
         rescue Valkey::CommandError => e
-          # RediSearch might not support unloading in some versions
-          unless e.message.include?("can't unload") || e.message.include?("data types")
+          # RediSearch might not support unloading in some versions, or MODULE command
+          # may not be allowed (e.g., enable-module-command not set on server)
+          unless e.message.include?("can't unload") || e.message.include?("data types") ||
+                 e.message.include?("MODULE command not allowed")
             warn "Warning: Unexpected error unloading RediSearch: #{e.message}"
           end
         end
@@ -172,13 +174,16 @@ module Lint
         # Add a document
         r.send_command(Valkey::RequestType::HSET, ["doc:1", "title", "test document"])
 
-        # Drop the index with DD flag (delete documents)
-        result = r.ft_drop_index(TEST_INDEX, dd: true)
+        # Note: Valkey's native FT.DROPINDEX does not support the DD flag.
+        # DD is a Redis Stack (RediSearch module) extension. On Valkey, dropping
+        # an index never deletes the underlying keys. We test that ft_drop_index
+        # works without DD and that documents are preserved.
+        result = r.ft_drop_index(TEST_INDEX)
         assert_equal "OK", result
 
-        # Verify document was deleted
+        # On Valkey, documents are preserved after dropping an index (no DD needed)
         exists = r.exists("doc:1")
-        assert_equal 0, exists, "Document should be deleted with DD flag"
+        assert_equal 1, exists, "Document should be preserved after FT.DROPINDEX on Valkey"
       end
     rescue Valkey::CommandError => e
       skip_if_redisearch_unavailable(e)
@@ -352,19 +357,21 @@ module Lint
 
         sleep 0.1
 
-        # Profile a search query
-        # Note: FT.PROFILE returns [search_results, profiling_metrics]
-        # We validate search_results work, but skip validating profiling_metrics due to complex nested structures
+        # FT.PROFILE is not available in Valkey's native search implementation.
+        # It is a Redis Stack (RediSearch module) only command.
+        # We test that the method exists and handles the expected error gracefully.
         begin
           result = r.ft_profile(TEST_INDEX, "SEARCH", "QUERY", "hello")
           assert_kind_of Array, result
           assert result.length >= 1, "Should return at least search results"
-          # result[0] would be search results, result[1] would be profiling metrics
         rescue Valkey::CommandError => e
-          # Profiling metrics have complex nested structures not fully supported in RESP2 conversion
-          raise unless e.message.include?("Array inside map must contain exactly two elements")
-
-          skip("FT.PROFILE profiling metrics conversion not yet fully supported in glide-core")
+          if e.message.include?("unknown command")
+            skip("FT.PROFILE not available in Valkey's native search")
+          elsif e.message.include?("Array inside map must contain exactly two elements")
+            skip("FT.PROFILE profiling metrics conversion not yet fully supported in glide-core")
+          else
+            raise
+          end
         end
       end
     rescue Valkey::CommandError => e
@@ -382,20 +389,21 @@ module Lint
 
         sleep 0.1
 
-        # Profile an aggregation query
-        # Note: FT.PROFILE returns [aggregation_results, profiling_metrics]
-        # We validate aggregation_results work, but skip validating profiling_metrics due to complex nested structures
+        # FT.PROFILE is not available in Valkey's native search implementation.
+        # It is a Redis Stack (RediSearch module) only command.
         begin
           result = r.ft_profile(TEST_INDEX, "AGGREGATE", "QUERY", "*",
                                 "GROUPBY", "1", "@category")
           assert_kind_of Array, result
           assert result.length >= 1, "Should return at least aggregation results"
-          # result[0] would be aggregation results, result[1] would be profiling metrics
         rescue Valkey::CommandError => e
-          # Profiling metrics have complex nested structures not fully supported in RESP2 conversion
-          raise unless e.message.include?("Array inside map must contain exactly two elements")
-
-          skip("FT.PROFILE profiling metrics conversion not yet fully supported in glide-core")
+          if e.message.include?("unknown command")
+            skip("FT.PROFILE not available in Valkey's native search")
+          elsif e.message.include?("Array inside map must contain exactly two elements")
+            skip("FT.PROFILE profiling metrics conversion not yet fully supported in glide-core")
+          else
+            raise
+          end
         end
       end
     rescue Valkey::CommandError => e
