@@ -24,19 +24,16 @@ module Lint
       # Temporarily switch to DB 0 for cleanup
       r.select(0)
 
-      # Clean up test index if it exists
+      # Clean up test index unconditionally (don't use index_exists? which switches DBs)
       begin
-        r.ft_drop_index(TEST_INDEX) if index_exists?(TEST_INDEX)
-      rescue Valkey::CommandError => e
-        # Ignore errors if index doesn't exist or command not available
-        unless e.message.include?("Unknown Index") || e.message.include?("unknown command")
-          warn "Warning: Could not drop test index: #{e.message}"
-        end
+        r.ft_drop_index(TEST_INDEX)
+      rescue Valkey::CommandError
+        # Ignore - index doesn't exist or command not available
       end
 
       # Clean up any other test indexes
       begin
-        r.ft_drop_index("#{TEST_INDEX}_2") if index_exists?("#{TEST_INDEX}_2")
+        r.ft_drop_index("#{TEST_INDEX}_2")
       rescue Valkey::CommandError
         # Ignore - index doesn't exist
       end
