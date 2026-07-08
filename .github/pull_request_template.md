@@ -9,36 +9,27 @@ here](https://github.com/valkey-io/valkey-glide/blob/main/CONTRIBUTING.md)
 ### Summary
 
 <!--
-Add a summary describing the changes
+A brief overview of what this PR achieves.
 -->
 
 ### Issue link
 
-This Pull Request is linked to issue: [<Issue Title>](<Issue URL>)
-Closes <Issue #>
+<!--
+Link to related issues (if applicable).
+-->
+
+Closes #
 
 ### Features / Behaviour Changes
 
 <!--
-Outline the feature support or behaviour changes included in this PR
--->
-
-### Implementation
-
-<!--
-Describe the implementation details. Highlight key code changes and call out any areas where you want reviewers to pay extra attention
--->
-
-### Limitations
-
-<!--
-Describe any features or use cases that are not implemented or are only partially supported
+Describe the changes made at a high level.
 -->
 
 ### Testing
 
 <!--
-Describe what tests have been conducted and any relevant test results
+Describe what tests have been added or run to verify the changes.
 -->
 
 ### Checklist
@@ -48,8 +39,6 @@ Before submitting the PR make sure the following are checked:
 -   [ ] This Pull Request is related to one issue.
 -   [ ] Commit message has a detailed description of what changed and why.
 -   [ ] Tests are added or updated.
--   [ ] CHANGELOG.md and documentation files are updated.
--   [ ] Linters have been run (`make *-lint` targets) and Prettier has been run (`make prettier-fix`).
--   [ ] Destination branch is correct - main or release
--   [ ] Create merge commit if merging release branch into main, squash otherwise.
--   [ ] Make sure to update the documentation in the [valkey-glide-docs](https://github.com/valkey-io/valkey-glide-docs) repository if necessary
+-   [ ] Documentation is updated (if applicable).
+-   [ ] Linters have been run (`bundle exec rubocop`) and pass.
+-   [ ] Destination branch is correct - main
