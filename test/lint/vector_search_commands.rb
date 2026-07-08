@@ -91,7 +91,8 @@ module Lint
         assert_equal "OK", result
 
         # Verify index exists
-        assert index_exists?(TEST_INDEX), "Index should exist after creation"
+        list = r.ft_list
+        assert list.include?(TEST_INDEX), "Index should exist after creation"
       end
     rescue Valkey::CommandError => e
       skip_if_redisearch_unavailable(e)
@@ -116,7 +117,8 @@ module Lint
         assert_equal "OK", result
 
         # Verify index exists
-        assert index_exists?(TEST_INDEX), "Index should exist after creation"
+        list = r.ft_list
+        assert list.include?(TEST_INDEX), "Index should exist after creation"
       end
     rescue Valkey::CommandError => e
       skip_if_redisearch_unavailable(e)
@@ -148,14 +150,18 @@ module Lint
       with_db0 do
         # Create an index
         r.ft_create(TEST_INDEX, "SCHEMA", "title", "TEXT")
-        assert index_exists?(TEST_INDEX)
+
+        # Verify index exists (use ft_list directly since we're already in db0)
+        list = r.ft_list
+        assert list.include?(TEST_INDEX), "Index should exist after creation"
 
         # Drop the index
         result = r.ft_drop_index(TEST_INDEX)
         assert_equal "OK", result
 
         # Verify index no longer exists
-        assert !index_exists?(TEST_INDEX), "Index should not exist after drop"
+        list = r.ft_list
+        assert !list.include?(TEST_INDEX), "Index should not exist after drop"
       end
     rescue Valkey::CommandError => e
       skip_if_redisearch_unavailable(e)
@@ -248,8 +254,10 @@ module Lint
 
         sleep 0.1
 
-        # Run aggregation
-        results = r.ft_aggregate(TEST_INDEX, "*", "GROUPBY", "1", "@category",
+        # Run aggregation with a numeric filter that matches all documents
+        # NOTE: Valkey's native search does not support "*" wildcard in FT.AGGREGATE queries.
+        # Use a filter expression that matches all indexed documents instead.
+        results = r.ft_aggregate(TEST_INDEX, "@price:[0 +inf]", "GROUPBY", "1", "@category",
                                  "REDUCE", "COUNT", "0", "AS", "count")
         assert_kind_of Array, results
       end
