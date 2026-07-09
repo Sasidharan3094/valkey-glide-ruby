@@ -17,18 +17,7 @@ module Lint
       rescue Valkey::CommandError => e
         if e.message.include?("unknown command") || e.message.include?("ERR unknown")
           # JSON module genuinely not available, try loading it
-          begin
-            r.module_load(JSON_MODULE_PATH)
-            r.json_set("test:json:check", "$", '{"test":1}')
-            r.json_del("test:json:check")
-          rescue Valkey::CommandError => e
-            if e.message.include?("unknown command") || e.message.include?("No such file") ||
-               e.message.include?("MODULE command not allowed") || e.message.include?("cannot open")
-              @json_not_available = true
-            else
-              raise # unexpected error — let it surface
-            end
-          end
+          @json_not_available = !try_load_json_module
         else
           @json_not_available = true
         end
@@ -286,6 +275,23 @@ module Lint
       rescue StandardError
         nil
       end
+    end
+
+    private
+
+    # Attempt to load the JSON module and verify it works.
+    # Returns true if successful, false if module is unavailable.
+    # Raises on unexpected errors (OOM, permission, misconfiguration).
+    def try_load_json_module
+      r.module_load(JSON_MODULE_PATH)
+      r.json_set("test:json:check", "$", '{"test":1}')
+      r.json_del("test:json:check")
+      true
+    rescue Valkey::CommandError => e
+      raise unless e.message.include?("unknown command") || e.message.include?("No such file") ||
+                   e.message.include?("MODULE command not allowed") || e.message.include?("cannot open")
+
+      false
     end
   end
 end
