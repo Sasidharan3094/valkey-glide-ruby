@@ -24,7 +24,7 @@ module Lint
       # Temporarily switch to DB 0 for cleanup
       r.select(0)
 
-      # Clean up test index unconditionally (don't use index_exists? which switches DBs)
+      # Clean up test index unconditionally
       begin
         r.ft_drop_index(TEST_INDEX)
       rescue Valkey::CommandError
@@ -167,7 +167,7 @@ module Lint
       skip_if_redisearch_unavailable(e)
     end
 
-    def test_ft_drop_index_with_dd
+    def test_ft_drop_index_preserves_documents
       ensure_redisearch_loaded
 
       with_db0 do
@@ -513,19 +513,6 @@ module Lint
           raise
         end
       end
-    end
-
-    def index_exists?(index_name)
-      with_db0 do
-        list = r.ft_list
-        if list.is_a?(Array)
-          list.include?(index_name)
-        else
-          false
-        end
-      end
-    rescue Valkey::CommandError
-      false
     end
 
     def skip_if_redisearch_unavailable(error)
