@@ -289,7 +289,8 @@ module Lint
       true
     rescue Valkey::CommandError => e
       raise unless e.message.include?("unknown command") || e.message.include?("No such file") ||
-                   e.message.include?("MODULE command not allowed") || e.message.include?("cannot open")
+                   e.message.include?("MODULE command not allowed") || e.message.include?("cannot open") ||
+                   e.message.include?("Error loading the extension")
 
       false
     end
