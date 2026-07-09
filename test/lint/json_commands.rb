@@ -15,12 +15,12 @@ module Lint
         r.json_set("test:json:check", "$", '{"test":1}')
         r.json_del("test:json:check")
       rescue Valkey::CommandError => e
-        if e.message.include?("unknown command") || e.message.include?("ERR unknown")
-          # JSON module genuinely not available, try loading it
-          @json_not_available = !try_load_json_module
-        else
-          @json_not_available = true
-        end
+        @json_not_available = if e.message.include?("unknown command") || e.message.include?("ERR unknown")
+                                # JSON module genuinely not available, try loading it
+                                !try_load_json_module
+                              else
+                                true
+                              end
       rescue StandardError
         @json_not_available = true
       end
