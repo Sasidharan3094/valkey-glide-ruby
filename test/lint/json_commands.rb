@@ -21,8 +21,13 @@ module Lint
             r.module_load(JSON_MODULE_PATH)
             r.json_set("test:json:check", "$", '{"test":1}')
             r.json_del("test:json:check")
-          rescue Valkey::CommandError
-            @json_not_available = true
+          rescue Valkey::CommandError => e
+            if e.message.include?("unknown command") || e.message.include?("No such file") ||
+               e.message.include?("MODULE command not allowed") || e.message.include?("cannot open")
+              @json_not_available = true
+            else
+              raise # unexpected error — let it surface
+            end
           end
         else
           @json_not_available = true

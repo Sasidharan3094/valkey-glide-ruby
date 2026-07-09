@@ -396,8 +396,10 @@ module Lint
 
         # FT.PROFILE is not available in Valkey's native search implementation.
         # It is a Redis Stack (RediSearch module) only command.
+        # Use "@price:[0 +inf]" instead of "*" to align with test_ft_aggregate
+        # (Valkey native search rejects wildcard in FT.AGGREGATE queries).
         begin
-          result = r.ft_profile(TEST_INDEX, "AGGREGATE", "QUERY", "*",
+          result = r.ft_profile(TEST_INDEX, "AGGREGATE", "QUERY", "@price:[0 +inf]",
                                 "GROUPBY", "1", "@category")
           assert_kind_of Array, result
           assert result.length >= 1, "Should return at least aggregation results"
