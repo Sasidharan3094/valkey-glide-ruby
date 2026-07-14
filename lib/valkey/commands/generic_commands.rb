@@ -52,16 +52,16 @@ class Valkey
       #
       # @return [Enumerator] an enumerator for all found keys
       #
-      # def scan_each(**options, &block)
-      #   return to_enum(:scan_each, **options) unless block_given?
-      #
-      #   cursor = 0
-      #   loop do
-      #     cursor, keys = scan(cursor, **options)
-      #     keys.each(&block)
-      #     break if cursor == "0"
-      #   end
-      # end
+      def scan_each(**options, &block)
+        return to_enum(:scan_each, **options) unless block_given?
+
+        cursor = 0
+        loop do
+          cursor, keys = scan(cursor, **options)
+          keys.each(&block)
+          break if cursor == "0"
+        end
+      end
 
       # Remove the expiration from a key.
       #
