@@ -366,6 +366,16 @@ module Lint
       assert_equal 2, all_keys.uniq.size
     end
 
+    def test_scan_each
+      skip("SCAN with match pattern may not see all keys in cluster mode") if cluster_mode?
+
+      set_some_keys
+
+      all_keys = valkey.scan_each(match: '{key}*').to_a
+
+      assert_equal 2, all_keys.uniq.size
+    end
+
     def test_type
       assert_equal "none", r.type("foo")
 
