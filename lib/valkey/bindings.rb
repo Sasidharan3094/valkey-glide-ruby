@@ -326,6 +326,21 @@ class Valkey
 
     attach_function :create_batch_otel_span, [], :uint64 # returns span pointer (u64) or 0 on failure
 
+    attach_function :create_otel_span_with_trace_context, [
+      :int,    # request_type (RequestType enum value)
+      :string, # trace_id (32-char lowercase hex, or nil for an independent span)
+      :string, # span_id (16-char lowercase hex, or nil for an independent span)
+      :uint8,  # trace_flags
+      :string  # trace_state (W3C tracestate header, or nil)
+    ], :uint64 # returns span pointer (u64); falls back to an independent span on invalid context
+
+    attach_function :create_batch_otel_span_with_trace_context, [
+      :string, # trace_id (32-char lowercase hex, or nil for an independent span)
+      :string, # span_id (16-char lowercase hex, or nil for an independent span)
+      :uint8,  # trace_flags
+      :string  # trace_state (W3C tracestate header, or nil)
+    ], :uint64 # returns span pointer (u64); falls back to an independent batch span on invalid context
+
     attach_function :drop_otel_span, [
       :uint64 # span_ptr to close
     ], :void
