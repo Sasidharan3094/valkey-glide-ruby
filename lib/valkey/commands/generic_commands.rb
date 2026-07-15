@@ -9,6 +9,11 @@ class Valkey
     module GenericCommands
       # Scan the keyspace
       #
+      # @note Standalone mode only. glide-core has no defined default route for
+      #   SCAN in cluster mode, so each call may land on a different node with
+      #   no cursor continuity between them — results are undefined (missed or
+      #   duplicated keys) rather than merely partial.
+      #
       # @example Retrieve the first batch of keys
       #   valkey.scan(0)
       #     # => ["4", ["key:21", "key:47", "key:42"]]
@@ -32,6 +37,9 @@ class Valkey
       end
 
       # Scan the keyspace
+      #
+      # @note Standalone mode only. Built on {#scan}, which has undefined
+      #   routing behavior in cluster mode (see its note).
       #
       # @example Retrieve all of the keys (with possible duplicates)
       #   valkey.scan_each.to_a
