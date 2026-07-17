@@ -16,8 +16,12 @@ class Valkey
       #   end # => ["OK", 6]
       #
       # @yield [multi] the commands that are called inside this block are cached
-      #   and written to the server upon returning from it
-      # @yieldparam [Valkey] multi `self`
+      #   locally (no server round-trip per command) and sent to the server as a
+      #   single atomic batch once the block returns - GLIDE wraps them in a real
+      #   MULTI/EXEC transaction internally. If the block raises, nothing has been
+      #   sent to the server yet, so the exception simply propagates - there is no
+      #   transaction to discard.
+      # @yieldparam [Valkey::Pipeline] multi collects the block's commands
       #
       # @return [Array<...>]
       #   - an array with replies
@@ -26,17 +30,12 @@ class Valkey
       # @see #unwatch
       def multi
         if block_given?
-          begin
-            @in_multi_block = true
-            start_multi
-            yield(self)
-            exec
-          rescue StandardError
-            discard
-            raise
-          ensure
-            @in_multi_block = false
-          end
+          pipeline = Pipeline.new
+          yield pipeline
+
+          return [] if pipeline.commands.empty?
+
+          send_batch_commands(pipeline.commands, exception: true, is_atomic: true)
         else
           start_multi
           self
@@ -114,11 +113,12 @@ class Valkey
       # @see #discard
       def exec
         if @in_multi
+          queued_commands = @queued_commands
           begin
             begin
               result = send_command(RequestType::EXEC)
               # If EXEC returns an error object (from array), it's already handled
-              result
+              result.is_a?(Array) ? reconvert_queued_replies(result, queued_commands) : result
             rescue CommandError => e
               # If EXEC itself raises an error (like when transaction is aborted),
               # return an array with the error to match expected behavior in tests
@@ -157,7 +157,50 @@ class Valkey
         @queued_commands = []
       end
 
+      # Commands whose reply is boolean when run standalone (via native return-type
+      # coercion server-side), but arrives as a raw 0/1 integer inside an EXEC array,
+      # since that coercion is keyed by the single command actually being run - which,
+      # for a queued command, is EXEC itself, not the original command.
+      #
+      # This list mirrors glide-core's own Boolean-coercion table in
+      # `value_conversion.rs::expected_type_for_cmd` (HEXISTS, HSETNX, EXPIRE, EXPIREAT,
+      # PEXPIRE, PEXPIREAT, SISMEMBER, PERSIST, SMOVE, PFADD, RENAMENX, MOVE, COPY,
+      # MSETNX, SETNX, XGROUP DESTROY, XGROUP CREATECONSUMER) MINUS the four commands
+      # whose Ruby method already passes its own explicit conversion block
+      # (`hexists`/`hsetnx` use `&Utils::Boolify`; `xgroup_destroy`/`xgroup_createconsumer`
+      # use a custom bool->int block). Those four are already handled correctly by the
+      # `if block` branch below, before this list is even consulted - listing them here
+      # too would be redundant, not wrong. Every RequestType below calls `send_command`
+      # with NO block at all, so this static list is the only place their boolean-ness
+      # is recorded.
+      BOOLEAN_REQUEST_TYPES = [
+        RequestType::EXPIRE, RequestType::EXPIRE_AT, RequestType::PEXPIRE, RequestType::PEXPIRE_AT,
+        RequestType::PERSIST, RequestType::SISMEMBER, RequestType::S_MOVE, RequestType::PFADD,
+        RequestType::RENAME_NX, RequestType::MOVE, RequestType::COPY, RequestType::MSET_NX,
+        RequestType::SET_NX
+      ].freeze
+
       private
+
+      # Re-applies each queued command's own reply conversion (e.g. `&Utils::Boolify`)
+      # to EXEC's raw array, since redis-rb's Future-based design does the equivalent
+      # (a Future remembers its conversion and re-applies it once EXEC resolves), but
+      # queued commands here go through the plain single-command path with no such
+      # memory - see BOOLEAN_REQUEST_TYPES above for the case with no explicit block.
+      def reconvert_queued_replies(result, queued_commands)
+        return result unless result.size == queued_commands.size
+
+        result.each_with_index.map do |value, i|
+          command_type, _args, block = queued_commands[i]
+          if block
+            block.call(value)
+          elsif BOOLEAN_REQUEST_TYPES.include?(command_type)
+            Utils::Boolify.call(value)
+          else
+            value
+          end
+        end
+      end
 
       # Start a MULTI block if one isn't already active.
       #
