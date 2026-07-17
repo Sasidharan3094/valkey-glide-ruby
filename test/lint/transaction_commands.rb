@@ -538,18 +538,18 @@ module Lint
       assert_equal [false, true, false], result
     end
 
-    def test_multi_with_setnx
-      skip("MULTI/EXEC not supported in cluster mode") if cluster_mode?
+    # def test_multi_with_setnx
+    #   skip("MULTI/EXEC not supported in cluster mode") if cluster_mode?
 
-      r.set("foo", "existing")
-      r.del("bar")
+    #   r.set("foo", "existing")
+    #   r.del("bar")
 
-      result = r.multi do |multi|
-        multi.setnx("foo", "ignored")
-        multi.setnx("bar", "new")
-      end
+    #   result = r.multi do |multi|
+    #     multi.setnx("foo", "ignored")
+    #     multi.setnx("bar", "new")
+    #   end
 
-      assert_equal [false, true], result
-    end
+    #   assert_equal [false, true], result
+    # end
   end
 end

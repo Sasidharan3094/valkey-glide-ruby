@@ -165,19 +165,27 @@ class Valkey
       # This list mirrors glide-core's own Boolean-coercion table in
       # `value_conversion.rs::expected_type_for_cmd` (HEXISTS, HSETNX, EXPIRE, EXPIREAT,
       # PEXPIRE, PEXPIREAT, SISMEMBER, PERSIST, SMOVE, PFADD, RENAMENX, MOVE, COPY,
-      # MSETNX, SETNX, XGROUP DESTROY, XGROUP CREATECONSUMER) MINUS the four commands
-      # whose Ruby method already passes its own explicit conversion block
-      # (`hexists`/`hsetnx` use `&Utils::Boolify`; `xgroup_destroy`/`xgroup_createconsumer`
-      # use a custom bool->int block). Those four are already handled correctly by the
-      # `if block` branch below, before this list is even consulted - listing them here
-      # too would be redundant, not wrong. Every RequestType below calls `send_command`
+      # MSETNX, XGROUP DESTROY, XGROUP CREATECONSUMER) MINUS the commands whose Ruby
+      # method already passes its own explicit conversion block (`hexists`/`hsetnx`
+      # use `&Utils::Boolify`; `xgroup_destroy`/`xgroup_createconsumer` use a custom
+      # bool->int block). Those are already handled correctly by the `if block`
+      # branch below, before this list is even consulted - listing them here too
+      # would be redundant, not wrong. Every RequestType below calls `send_command`
       # with NO block at all, so this static list is the only place their boolean-ness
       # is recorded.
+      #
+      # NOTE: SETNX is deliberately NOT in glide-core's coercion table (and so isn't
+      # here as a "no block" entry either) - it's `redis-rb`-style boolean-ness only,
+      # not something the server/`glide-core` treats as boolean, since coercion there
+      # is keyed by command name alone and can't distinguish this dedicated RequestType
+      # from a raw `customCommand(["SETNX", ...])` call, which other bindings' existing
+      # contracts expect to keep returning a plain integer. `setnx`'s own Ruby method
+      # passes `&Utils::Boolify` directly instead - see string_commands.rb - so it's
+      # already covered by the `if block` branch, same as hexists/hsetnx.
       BOOLEAN_REQUEST_TYPES = [
         RequestType::EXPIRE, RequestType::EXPIRE_AT, RequestType::PEXPIRE, RequestType::PEXPIRE_AT,
         RequestType::PERSIST, RequestType::SISMEMBER, RequestType::S_MOVE, RequestType::PFADD,
-        RequestType::RENAME_NX, RequestType::MOVE, RequestType::COPY, RequestType::MSET_NX,
-        RequestType::SET_NX
+        RequestType::RENAME_NX, RequestType::MOVE, RequestType::COPY, RequestType::MSET_NX
       ].freeze
 
       private
