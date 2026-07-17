@@ -380,13 +380,20 @@ class Valkey
       arg_ptrs, arg_lens, _buffers = build_command_args(command_args)
     end
 
-    # Create OpenTelemetry span if sampling is enabled
-    # TODO: add parent span propagation via create_otel_span_with_parent
-    # to support distributed tracing context (see Go client base_client.go for reference)
+    # Create OpenTelemetry span if sampling is enabled, as a child of the app's current
+    # span context when a parent_span_context_provider is registered (see Valkey::OpenTelemetry).
     span_ptr = 0
     if OpenTelemetry.should_sample?
       begin
-        span_ptr = Bindings.create_otel_span(command_type)
+        parent_ctx = OpenTelemetry.parent_span_context
+        span_ptr = if parent_ctx
+                     Bindings.create_otel_span_with_trace_context(
+                       command_type, parent_ctx[:trace_id], parent_ctx[:span_id],
+                       parent_ctx[:trace_flags], parent_ctx[:tracestate]
+                     )
+                   else
+                     Bindings.create_otel_span(command_type)
+                   end
       rescue StandardError => e
         # Log error but continue execution - tracing is non-critical
         warn "Failed to create OpenTelemetry span: #{e.message}"
@@ -489,13 +496,19 @@ class Valkey
     batch_options[:timeout] = 0 # No timeout
     batch_options[:route_info] = FFI::Pointer::NULL
 
-    # Create OpenTelemetry span for batch operation if sampling is enabled
-    # TODO: add parent span propagation via create_batch_otel_span_with_parent
-    # to support distributed tracing context (see Go client base_client.go for reference)
+    # Create OpenTelemetry span for batch operation if sampling is enabled, as a child of
+    # the app's current span context when a parent_span_context_provider is registered.
     span_ptr = 0
     if OpenTelemetry.should_sample?
       begin
-        span_ptr = Bindings.create_batch_otel_span
+        parent_ctx = OpenTelemetry.parent_span_context
+        span_ptr = if parent_ctx
+                     Bindings.create_batch_otel_span_with_trace_context(
+                       parent_ctx[:trace_id], parent_ctx[:span_id], parent_ctx[:trace_flags], parent_ctx[:tracestate]
+                     )
+                   else
+                     Bindings.create_batch_otel_span
+                   end
       rescue StandardError => e
         warn "Failed to create OpenTelemetry batch span: #{e.message}"
         span_ptr = 0
