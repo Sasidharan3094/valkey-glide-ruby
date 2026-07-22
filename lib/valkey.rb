@@ -378,7 +378,10 @@ class Valkey
       arg_lens.put_ulong(0, 0)
       _buffers = [] # nothing to keep alive
     else
-      arg_ptrs, arg_lens, _buffers = build_command_args(command_args)
+      # Reassign command_args to the (possibly flattened) array build_command_args
+      # actually built arg_ptrs/arg_lens from - see that method for why using the
+      # original, pre-flatten array's size below would go out of sync with them.
+      arg_ptrs, arg_lens, _buffers, command_args = build_command_args(command_args)
     end
 
     # Create OpenTelemetry span if sampling is enabled, as a child of the app's current
@@ -497,7 +500,10 @@ class Valkey
     buffers = [] # Keep references to prevent GC
 
     commands.each do |command_type, command_args, block|
-      arg_ptrs, arg_lens, arg_bufs = build_command_args(command_args)
+      # Reassign to the (possibly flattened) array build_command_args actually
+      # built arg_ptrs/arg_lens from - see that method for why the original,
+      # pre-flatten array's size would go out of sync with them below.
+      arg_ptrs, arg_lens, arg_bufs, command_args = build_command_args(command_args)
 
       cmd = Bindings::CmdInfo.new
       cmd[:request_type] = command_type
@@ -602,9 +608,25 @@ class Valkey
   end
 
   def build_command_args(command_args)
+    # Mirror redis-client's CommandBuilder#generate: flat_map every element,
+    # turning a Hash into alternating key/value pairs (same one-level
+    # auto-flatten redis-client gets from flat_map on a plain Array element
+    # too, as a side effect of flat_map's own semantics - not Hash-specific).
+    # Every existing caller in this codebase already pre-flattens its own
+    # arguments (see e.g. hset/mset/zadd/keys.flatten!), so this is a no-op
+    # for them - it only changes behavior for a caller that passes a raw,
+    # un-flattened Array/Hash straight through, which previously got
+    # silently mis-serialized via Array#to_s/Hash#to_s into one garbled
+    # string argument instead of several real ones.
+    command_args = command_args.flat_map { |el| el.is_a?(Hash) ? el.flatten : el }
+
     # For empty arrays, pass NULL pointers as per Rust FFI contract
     # This matches Go's approach which successfully uses nil pointers
-    return [FFI::Pointer::NULL, FFI::Pointer::NULL, []] if command_args.empty?
+    # Also returns the (possibly flattened) command_args - callers must use
+    # THIS array's size for the FFI arg_count, not their own original
+    # pre-flatten local variable, or arg_count and arg_ptrs/arg_lens go out
+    # of sync when flattening actually changed the element count.
+    return [FFI::Pointer::NULL, FFI::Pointer::NULL, [], []] if command_args.empty?
 
     arg_ptrs = FFI::MemoryPointer.new(:pointer, command_args.size)
     arg_lens = FFI::MemoryPointer.new(:ulong, command_args.size)
@@ -619,7 +641,7 @@ class Valkey
       arg_lens.put_ulong(i * 8, arg.bytesize)
     end
 
-    [arg_ptrs, arg_lens, buffers]
+    [arg_ptrs, arg_lens, buffers, command_args]
   end
 
   def convert_response(res, return_map_as_hash: false, &block)
