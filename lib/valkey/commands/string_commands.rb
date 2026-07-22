@@ -129,7 +129,14 @@ class Valkey
       # @param [String] value
       # @return [Boolean] whether the key was set or not
       def setnx(key, value)
-        send_command(RequestType::SET_NX, [key, value])
+        # &Utils::Boolify (not glide-core's generic Boolean-coercion table) is
+        # deliberately used here: glide-core's per-command coercion is keyed by
+        # command name alone, so it can't distinguish this dedicated SETNX
+        # RequestType from a raw `customCommand(["SETNX", ...])` call, which
+        # other GLIDE bindings' existing contracts expect to keep returning a
+        # plain 0/1 integer. Doing the conversion here keeps it scoped to this
+        # one Ruby-level method - see hexists/hsetnx for the same pattern.
+        send_command(RequestType::SET_NX, [key, value], &Utils::Boolify)
       end
 
       # Set one or more values.
